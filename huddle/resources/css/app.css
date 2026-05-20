@@ -1,0 +1,145 @@
+@import 'tailwindcss';
+@import '../../vendor/livewire/flux/dist/flux.css';
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../vendor/livewire/flux-pro/stubs/**/*.blade.php';
+@source '../../vendor/livewire/flux/stubs/**/*.blade.php';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --color-zinc-50: #fafafa;
+    --color-zinc-100: #f5f5f5;
+    --color-zinc-200: #e5e5e5;
+    --color-zinc-300: #d4d4d4;
+    --color-zinc-400: #a3a3a3;
+    --color-zinc-500: #737373;
+    --color-zinc-600: #525252;
+    --color-zinc-700: #404040;
+    --color-zinc-800: #262626;
+    --color-zinc-900: #171717;
+    --color-zinc-950: #0a0a0a;
+
+    --color-huddle-primary: #287878;
+    --color-huddle-accent: #d630e6;
+    --color-huddle-alt: #ffaa40;
+    --color-huddle-comp: #7edb66;
+
+    --color-accent: var(--color-huddle-primary);
+    --color-accent-content: var(--color-huddle-primary);
+    --color-accent-foreground: var(--color-white);
+}
+
+@layer theme {
+    .dark {
+        --color-accent: var(--color-huddle-primary);
+        --color-accent-content: var(--color-huddle-primary);
+        --color-accent-foreground: var(--color-white);
+    }
+}
+
+@layer base {
+
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-gray-200, currentColor);
+    }
+
+    /* Light mode: stronger contrast and clearer surfaces */
+    html:not(.dark) {
+        color-scheme: light;
+    }
+
+    html:not(.dark) body {
+        @apply text-zinc-800;
+    }
+
+    html:not(.dark) .text-zinc-400 {
+        @apply text-zinc-600;
+    }
+
+    html:not(.dark) .text-zinc-500 {
+        @apply text-zinc-600;
+    }
+
+    html:not(.dark) .text-zinc-600 {
+        @apply text-zinc-700;
+    }
+
+    html:not(.dark) .border-zinc-200 {
+        @apply border-zinc-300;
+    }
+
+    html:not(.dark) .rounded-xl.border.bg-white,
+    html:not(.dark) .rounded-xl.border.bg-zinc-50 {
+        @apply shadow-sm shadow-zinc-300/40;
+    }
+
+    html:not(.dark) [data-flux-heading] {
+        @apply text-zinc-900;
+    }
+
+    html:not(.dark) [data-flux-subheading],
+    html:not(.dark) [data-flux-text]:not([data-color]) {
+        @apply text-zinc-600;
+    }
+
+    html:not(.dark) [data-flux-label] {
+        @apply font-medium text-zinc-700;
+    }
+
+    html:not(.dark) [data-flux-control] {
+        @apply border-zinc-300 bg-white text-zinc-900;
+    }
+
+    html:not(.dark) [data-flux-cell] {
+        @apply text-zinc-800;
+    }
+
+    html:not(.dark) [data-flux-column] {
+        @apply text-zinc-600;
+    }
+
+    html:not(.dark) .hover\:bg-zinc-50:hover {
+        @apply bg-zinc-100;
+    }
+}
+
+[data-flux-field]:not(ui-radio, ui-checkbox) {
+    @apply grid gap-2;
+}
+
+[data-flux-label] {
+    @apply  !mb-0 !leading-tight;
+}
+
+input:focus[data-flux-control],
+textarea:focus[data-flux-control],
+select:focus[data-flux-control] {
+    @apply outline-hidden ring-2 ring-huddle-primary ring-offset-2 ring-offset-zinc-100 dark:ring-offset-zinc-900;
+}
+
+/* Flux table: override first:ps-0 / last:pe-0 for even column padding */
+[data-flux-cell]:first-child,
+[data-flux-column]:first-child {
+    padding-inline-start: 0.75rem !important;
+}
+
+[data-flux-cell]:last-child,
+[data-flux-column]:last-child {
+    padding-inline-end: 0.75rem !important;
+}
+
+.material-symbols-outlined {
+    font-variation-settings:
+        'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24;
+}
