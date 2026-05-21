@@ -37,12 +37,20 @@ return new class extends Migration
      */
     public function down(): void
     {
+        try {
         // Drop role_id from users table
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn('role_id');
         });
+        } catch (\Exception $e) {
+            // Do nothing
+        }
 
         // Drop roles table
-        Schema::dropIfExists('roles');
+        try {
+            Schema::dropIfExists('roles');
+        } catch (\Exception $e) {
+            // Do nothing
+        }
     }
 };

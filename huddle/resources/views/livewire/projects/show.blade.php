@@ -11,7 +11,7 @@
                 <x-project-status-badge :status="$project->project_status" />
                 <flux:text class="text-sm">
                     {{ __('Led by') }}
-                    <span class="font-medium text-zinc-700 dark:text-zinc-200">{{ $project->leader->name }}</span>
+                    <x-user-link :user="$project->leader" class="text-zinc-700 dark:text-zinc-200" />
                 </flux:text>
                 @if ($project->due_date)
                     <span @class([
@@ -327,8 +327,8 @@
                                         @else
                                             <div class="flex items-center justify-between gap-2 rounded-lg bg-white px-2 py-1.5 dark:bg-zinc-900">
                                                 <div class="flex min-w-0 items-center gap-2">
-                                                    <flux:avatar :name="$volunteer->user->name" :initials="$volunteer->user->initials()" size="sm" />
-                                                    <span class="truncate text-sm font-medium text-zinc-900 dark:text-white">{{ $volunteer->user->name }}</span>
+                                                    <x-user-avatar :user="$volunteer->user" size="sm" />
+                                                    <x-user-link :user="$volunteer->user" class="truncate text-sm text-zinc-900 dark:text-white" />
                                                 </div>
                                                 @if ($this->isAdmin)
                                                     <div class="flex shrink-0 gap-1">

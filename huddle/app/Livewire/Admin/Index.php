@@ -4,15 +4,18 @@ namespace App\Livewire\Admin;
 
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
+use App\Models\MembershipRenewal;
+use App\Models\MembershipRenewalAssignment;
 use App\Models\OrganizationSetting;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\UserFlags;
+use App\Notifications\UserInvitationNotification;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -63,6 +66,26 @@ class Index extends Component
     /** @var array<int> */
     public array $assignedFlagIds = [];
 
+    public string $membershipTab = 'periods';
+
+    public bool $showRenewalModal = false;
+
+    public ?int $editingRenewalId = null;
+
+    public string $renewal_name = '';
+
+    public string $renewal_start_date = '';
+
+    public string $renewal_end_date = '';
+
+    public bool $showMembershipAssignmentModal = false;
+
+    public ?int $editingMembershipAssignmentId = null;
+
+    public ?int $membership_assignment_user_id = null;
+
+    public ?int $membership_assignment_renewal_id = null;
+
     public function mount(): void
     {
         $this->loadBankDetails();
@@ -70,8 +93,15 @@ class Index extends Component
 
     public function setTab(string $tab): void
     {
-        if (in_array($tab, ['users', 'tags', 'bank'], true)) {
+        if (in_array($tab, ['users', 'tags', 'membership', 'bank'], true)) {
             $this->activeTab = $tab;
+        }
+    }
+
+    public function setMembershipTab(string $tab): void
+    {
+        if (in_array($tab, ['periods', 'assignments'], true)) {
+            $this->membershipTab = $tab;
         }
     }
 
@@ -79,8 +109,30 @@ class Index extends Component
     public function users()
     {
         return User::query()
-            ->with(['role', 'flags'])
+            ->with([
+                'role',
+                'flags',
+                'membershipRenewalAssignments.membershipRenewal',
+            ])
             ->orderBy('name')
+            ->get();
+    }
+
+    #[Computed]
+    public function membershipRenewals()
+    {
+        return MembershipRenewal::query()
+            ->withCount('assignments')
+            ->orderByDesc('name')
+            ->get();
+    }
+
+    #[Computed]
+    public function membershipAssignments()
+    {
+        return MembershipRenewalAssignment::query()
+            ->with(['user.membershipRenewalAssignments.membershipRenewal', 'membershipRenewal'])
+            ->orderByDesc('updated_at')
             ->get();
     }
 
@@ -182,7 +234,8 @@ class Index extends Component
             'password' => Hash::make(Str::password(32)),
         ]);
 
-        Password::sendResetLink(['email' => $user->email]);
+        $token = Password::broker()->createToken($user);
+        $user->notify(new UserInvitationNotification($token));
 
         $this->syncUserFlags($user);
 
@@ -273,6 +326,163 @@ class Index extends Component
 
         $this->closeTagModal();
         unset($this->flags);
+    }
+
+    public function updatedRenewalName(): void
+    {
+        if (preg_match('/^\d{4}$/', $this->renewal_name) !== 1) {
+            return;
+        }
+
+        $this->renewal_start_date = "{$this->renewal_name}-01-01";
+        $this->renewal_end_date = "{$this->renewal_name}-12-31";
+    }
+
+    public function openCreateRenewalModal(): void
+    {
+        $this->resetRenewalForm();
+        $this->showRenewalModal = true;
+    }
+
+    public function openEditRenewalModal(int $renewalId): void
+    {
+        $renewal = MembershipRenewal::query()->findOrFail($renewalId);
+
+        $this->editingRenewalId = $renewal->id;
+        $this->renewal_name = $renewal->name;
+        $this->renewal_start_date = $renewal->start_date->format('Y-m-d');
+        $this->renewal_end_date = $renewal->end_date->format('Y-m-d');
+        $this->showRenewalModal = true;
+    }
+
+    public function closeRenewalModal(): void
+    {
+        $this->showRenewalModal = false;
+        $this->resetRenewalForm();
+        $this->resetValidation();
+    }
+
+    public function saveRenewal(): void
+    {
+        $validated = $this->validate([
+            'renewal_name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('membership_renewals', 'name')->ignore($this->editingRenewalId),
+            ],
+            'renewal_start_date' => ['required', 'date'],
+            'renewal_end_date' => ['required', 'date', 'after_or_equal:renewal_start_date'],
+        ]);
+
+        $data = [
+            'name' => $validated['renewal_name'],
+            'start_date' => $validated['renewal_start_date'],
+            'end_date' => $validated['renewal_end_date'],
+        ];
+
+        if ($this->editingRenewalId) {
+            MembershipRenewal::query()->findOrFail($this->editingRenewalId)->update($data);
+            session()->flash('status', __('Membership period updated successfully.'));
+        } else {
+            MembershipRenewal::create($data);
+            session()->flash('status', __('Membership period created successfully.'));
+        }
+
+        $this->closeRenewalModal();
+        unset($this->membershipRenewals, $this->membershipAssignments, $this->users);
+    }
+
+    public function deleteRenewal(int $renewalId): void
+    {
+        $renewal = MembershipRenewal::query()->findOrFail($renewalId);
+        $renewal->assignments()->delete();
+        $renewal->delete();
+
+        unset($this->membershipRenewals, $this->membershipAssignments, $this->users);
+        session()->flash('status', __('Membership period deleted successfully.'));
+    }
+
+    public function openCreateMembershipAssignmentModal(): void
+    {
+        $this->resetMembershipAssignmentForm();
+        $this->showMembershipAssignmentModal = true;
+    }
+
+    public function openEditMembershipAssignmentModal(int $assignmentId): void
+    {
+        $assignment = MembershipRenewalAssignment::query()->findOrFail($assignmentId);
+
+        $this->editingMembershipAssignmentId = $assignment->id;
+        $this->membership_assignment_user_id = $assignment->user_id;
+        $this->membership_assignment_renewal_id = $assignment->membership_renewal_id;
+        $this->showMembershipAssignmentModal = true;
+    }
+
+    public function closeMembershipAssignmentModal(): void
+    {
+        $this->showMembershipAssignmentModal = false;
+        $this->resetMembershipAssignmentForm();
+        $this->resetValidation();
+    }
+
+    public function saveMembershipAssignment(): void
+    {
+        $validated = $this->validate([
+            'membership_assignment_user_id' => [
+                'required',
+                'exists:users,id',
+                Rule::unique('membership_renewal_assignments', 'user_id')
+                    ->where(fn ($query) => $query->where('membership_renewal_id', $this->membership_assignment_renewal_id))
+                    ->ignore($this->editingMembershipAssignmentId),
+            ],
+            'membership_assignment_renewal_id' => ['required', 'exists:membership_renewals,id'],
+        ]);
+
+        $data = [
+            'user_id' => $validated['membership_assignment_user_id'],
+            'membership_renewal_id' => $validated['membership_assignment_renewal_id'],
+        ];
+
+        if ($this->editingMembershipAssignmentId) {
+            MembershipRenewalAssignment::query()
+                ->findOrFail($this->editingMembershipAssignmentId)
+                ->update($data);
+            session()->flash('status', __('Membership assignment updated successfully.'));
+        } else {
+            MembershipRenewalAssignment::create($data);
+            session()->flash('status', __('Membership assigned successfully.'));
+        }
+
+        $this->closeMembershipAssignmentModal();
+        unset($this->membershipAssignments, $this->membershipRenewals, $this->users);
+    }
+
+    public function deleteMembershipAssignment(int $assignmentId): void
+    {
+        MembershipRenewalAssignment::query()->findOrFail($assignmentId)->delete();
+
+        unset($this->membershipAssignments, $this->membershipRenewals, $this->users);
+        session()->flash('status', __('Membership assignment removed successfully.'));
+    }
+
+    protected function resetRenewalForm(): void
+    {
+        $this->reset([
+            'editingRenewalId',
+            'renewal_name',
+            'renewal_start_date',
+            'renewal_end_date',
+        ]);
+    }
+
+    protected function resetMembershipAssignmentForm(): void
+    {
+        $this->reset([
+            'editingMembershipAssignmentId',
+            'membership_assignment_user_id',
+            'membership_assignment_renewal_id',
+        ]);
     }
 
     public function deleteTag(int $tagId): void

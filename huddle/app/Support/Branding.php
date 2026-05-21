@@ -32,4 +32,14 @@ class Branding
     {
         return self::tintedDataUri('MIS_Banner_Black.svg');
     }
+
+    public static function logoUrl(): string
+    {
+        return asset('images/branding/logo_only.svg');
+    }
+
+    public static function bannerUrl(bool $forDarkBackground = false): string
+    {
+        return asset('images/branding/'.($forDarkBackground ? 'MIS_Banner_White.svg' : 'MIS_Banner_Black.svg'));
+    }
 }

@@ -21,6 +21,14 @@
                     <flux:sidebar.item icon="calendar" :href="route('events.index')" :current="request()->routeIs('events.*')" wire:navigate>
                         {{ __('Events') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="users" :href="route('members.index')" :current="request()->routeIs('members.*')" wire:navigate>
+                        {{ __('Members') }}
+                    </flux:sidebar.item>
+                    @if (auth()->user()->canAccessMentors())
+                        <flux:sidebar.item icon="academic-cap" :href="route('mentors.index')" :current="request()->routeIs('mentors.*')" wire:navigate>
+                            {{ __('Mentors') }}
+                        </flux:sidebar.item>
+                    @endif
                     @if (auth()->user()->isAdmin())
                         <flux:sidebar.item icon="shield-check" :href="route('admin.index')" :current="request()->routeIs('admin.*')" wire:navigate>
                             {{ __('Admin') }}

@@ -5,6 +5,12 @@
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
 
+        @error('email')
+            <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-center text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300" role="alert">
+                {{ $message }}
+            </div>
+        @enderror
+
         <form method="POST" action="{{ route('password.email') }}" class="flex flex-col gap-6">
             @csrf
 

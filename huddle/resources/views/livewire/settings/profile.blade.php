@@ -40,6 +40,15 @@
             </div>
         </form>
 
+        <flux:separator class="my-8" />
+
+        <div>
+            <flux:heading size="lg">{{ __('Your membership') }}</flux:heading>
+            <flux:text class="mt-1">{{ __('Membership period, tags, and accreditations on your account. Contact an administrator or mentor to request changes.') }}</flux:text>
+
+            <x-user-membership :user="$this->membership" class="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-700 dark:bg-zinc-800/50" />
+        </div>
+
         @if ($this->showDeleteUser)
             <livewire:settings.delete-user-form />
         @endif

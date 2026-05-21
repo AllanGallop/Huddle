@@ -6,12 +6,17 @@ use App\Livewire\Admin\Index as AdminIndex;
 use App\Livewire\Dashboard;
 use App\Livewire\Events\Index as EventsIndex;
 use App\Livewire\Events\Show as EventsShow;
+use App\Livewire\Members\Index as MembersIndex;
+use App\Livewire\Mentors\Index as MentorsIndex;
 use App\Livewire\Projects\Index as ProjectsIndex;
 use App\Livewire\Projects\Show as ProjectsShow;
+use App\Livewire\Users\Show as UsersShow;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return auth()->check()
+        ? redirect()->route('dashboard')
+        : redirect()->route('login');
 })->name('home');
 
 Route::get('digest/unsubscribe/{user}', DigestUnsubscribeController::class)
@@ -21,6 +26,10 @@ Route::get('digest/unsubscribe/{user}', DigestUnsubscribeController::class)
 Route::livewire('dashboard', Dashboard::class)
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
+
+Route::livewire('members', MembersIndex::class)
+    ->middleware(['auth', 'verified'])
+    ->name('members.index');
 
 Route::livewire('events', EventsIndex::class)
     ->middleware(['auth', 'verified'])
@@ -41,6 +50,14 @@ Route::livewire('projects/{project}', ProjectsShow::class)
 Route::livewire('admin', AdminIndex::class)
     ->middleware(['auth', 'verified', 'admin'])
     ->name('admin.index');
+
+Route::livewire('mentors', MentorsIndex::class)
+    ->middleware(['auth', 'verified', 'mentor'])
+    ->name('mentors.index');
+
+Route::livewire('users/{user}', UsersShow::class)
+    ->middleware(['auth', 'verified'])
+    ->name('users.show');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('projects/{project}/quote', [ProjectDocumentController::class, 'quote'])

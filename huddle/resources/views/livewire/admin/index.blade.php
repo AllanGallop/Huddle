@@ -4,7 +4,7 @@
             <x-material-icon name="admin_panel_settings" class="text-[1.75rem] text-huddle-primary" />
             {{ __('Admin') }}
         </flux:heading>
-        <flux:text class="mt-1">{{ __('Manage team members, user tags, and organisation bank details.') }}</flux:text>
+        <flux:text class="mt-1">{{ __('Manage team members, tags, membership renewals, and organisation bank details.') }}</flux:text>
     </div>
 
     @if (session('status'))
@@ -46,6 +46,20 @@
             <span class="inline-flex items-center justify-center gap-2">
                 <x-material-icon name="sell" class="text-[1.125rem]" />
                 {{ __('Tags') }}
+            </span>
+        </button>
+        <button
+            type="button"
+            wire:click="setTab('membership')"
+            @class([
+                'flex-1 rounded-md px-4 py-2 text-sm font-medium transition sm:flex-none',
+                'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $activeTab === 'membership',
+                'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $activeTab !== 'membership',
+            ])
+        >
+            <span class="inline-flex items-center justify-center gap-2">
+                <x-material-icon name="card_membership" class="text-[1.125rem]" />
+                {{ __('Membership') }}
             </span>
         </button>
         <button
@@ -104,8 +118,8 @@
                             <tr wire:key="user-{{ $user->id }}" class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                                 <td class="px-5 py-3">
                                     <div class="flex items-center gap-3">
-                                        <flux:avatar :name="$user->name" :initials="$user->initials()" size="sm" />
-                                        <span class="font-medium text-zinc-900 dark:text-white">{{ $user->name }}</span>
+                                        <x-user-avatar :user="$user" size="sm" />
+                                        <x-user-link :user="$user" class="text-zinc-900 dark:text-white" />
                                         @if ($user->id === auth()->id())
                                             <span class="rounded-full bg-huddle-primary/15 px-2 py-0.5 text-xs font-medium text-huddle-primary">{{ __('You') }}</span>
                                         @endif
@@ -221,6 +235,190 @@
         </div>
     @endif
 
+    @if ($activeTab === 'membership')
+        <nav class="flex gap-1 rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-700 dark:bg-zinc-800/60" aria-label="{{ __('Membership sections') }}">
+            <button
+                type="button"
+                wire:click="setMembershipTab('periods')"
+                @class([
+                    'flex-1 rounded-md px-4 py-2 text-sm font-medium transition sm:flex-none',
+                    'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $membershipTab === 'periods',
+                    'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $membershipTab !== 'periods',
+                ])
+            >
+                {{ __('Periods') }}
+            </button>
+            <button
+                type="button"
+                wire:click="setMembershipTab('assignments')"
+                @class([
+                    'flex-1 rounded-md px-4 py-2 text-sm font-medium transition sm:flex-none',
+                    'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $membershipTab === 'assignments',
+                    'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $membershipTab !== 'assignments',
+                ])
+            >
+                {{ __('Assignments') }}
+            </button>
+        </nav>
+
+        @if ($membershipTab === 'periods')
+            <div class="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+                <div class="flex flex-col gap-4 border-b border-zinc-200 p-4 dark:border-zinc-700 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                    <div>
+                        <flux:heading size="lg">{{ __('Membership periods') }}</flux:heading>
+                        <flux:text class="mt-1 text-sm">{{ __('Yearly membership renewals (e.g. 2026, 2025).') }}</flux:text>
+                    </div>
+                    <flux:button variant="primary" wire:click="openCreateRenewalModal">
+                        <span class="inline-flex items-center gap-2">
+                            <x-material-icon name="add" class="text-[1.25rem]" />
+                            {{ __('Add period') }}
+                        </span>
+                    </flux:button>
+                </div>
+
+                @if ($this->membershipRenewals->isEmpty())
+                    <div class="px-5 py-12 text-center">
+                        <flux:text>{{ __('No membership periods yet. Create one to assign to members.') }}</flux:text>
+                    </div>
+                @else
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="border-b border-zinc-200 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-700">
+                                <tr>
+                                    <th class="px-5 py-3">{{ __('Period') }}</th>
+                                    <th class="px-5 py-3 hidden sm:table-cell">{{ __('Start') }}</th>
+                                    <th class="px-5 py-3 hidden sm:table-cell">{{ __('End') }}</th>
+                                    <th class="px-5 py-3">{{ __('Status') }}</th>
+                                    <th class="px-5 py-3">{{ __('Members') }}</th>
+                                    <th class="px-5 py-3 text-end">{{ __('Actions') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                                @foreach ($this->membershipRenewals as $renewal)
+                                    <tr wire:key="renewal-{{ $renewal->id }}" class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                                        <td class="px-5 py-3 font-medium text-zinc-900 dark:text-white">{{ $renewal->name }}</td>
+                                        <td class="hidden px-5 py-3 text-zinc-600 dark:text-zinc-300 sm:table-cell">{{ $renewal->start_date->format('j M Y') }}</td>
+                                        <td class="hidden px-5 py-3 text-zinc-600 dark:text-zinc-300 sm:table-cell">{{ $renewal->end_date->format('j M Y') }}</td>
+                                        <td class="px-5 py-3">
+                                            <span @class([
+                                                'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
+                                                'bg-huddle-comp/20 text-huddle-comp' => $renewal->isCurrent(),
+                                                'bg-zinc-500/15 text-zinc-600 dark:text-zinc-300' => ! $renewal->isCurrent(),
+                                            ])>
+                                                {{ $renewal->isCurrent() ? __('Current') : __('Past') }}
+                                            </span>
+                                        </td>
+                                        <td class="px-5 py-3 text-zinc-600 dark:text-zinc-300">{{ $renewal->assignments_count }}</td>
+                                        <td class="px-5 py-3">
+                                            <div class="flex justify-end gap-1">
+                                                <flux:button size="sm" variant="ghost" wire:click="openEditRenewalModal({{ $renewal->id }})">
+                                                    <x-material-icon name="edit" class="text-[1rem]" />
+                                                </flux:button>
+                                                <flux:button
+                                                    size="sm"
+                                                    variant="danger"
+                                                    wire:click="deleteRenewal({{ $renewal->id }})"
+                                                    wire:confirm="{{ __('Delete :name? All member assignments for this period will be removed.', ['name' => $renewal->name]) }}"
+                                                >
+                                                    <x-material-icon name="delete" class="text-[1rem]" />
+                                                </flux:button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </div>
+        @endif
+
+        @if ($membershipTab === 'assignments')
+            <div class="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+                <div class="flex flex-col gap-4 border-b border-zinc-200 p-4 dark:border-zinc-700 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                    <div>
+                        <flux:heading size="lg">{{ __('Member assignments') }}</flux:heading>
+                        <flux:text class="mt-1 text-sm">{{ __('Link members to a membership period.') }}</flux:text>
+                    </div>
+                    <flux:button
+                        variant="primary"
+                        wire:click="openCreateMembershipAssignmentModal"
+                        :disabled="$this->membershipRenewals->isEmpty()"
+                    >
+                        <span class="inline-flex items-center gap-2">
+                            <x-material-icon name="person_add" class="text-[1.25rem]" />
+                            {{ __('Assign membership') }}
+                        </span>
+                    </flux:button>
+                </div>
+
+                @if ($this->membershipAssignments->isEmpty())
+                    <div class="px-5 py-12 text-center">
+                        <flux:text>{{ __('No assignments yet. Assign a membership period to a member.') }}</flux:text>
+                    </div>
+                @else
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="border-b border-zinc-200 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-700">
+                                <tr>
+                                    <th class="px-5 py-3">{{ __('Member') }}</th>
+                                    <th class="px-5 py-3">{{ __('Period') }}</th>
+                                    <th class="px-5 py-3">{{ __('Membership') }}</th>
+                                    <th class="px-5 py-3 text-end">{{ __('Actions') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                                @foreach ($this->membershipAssignments as $assignment)
+                                    <tr wire:key="membership-assignment-{{ $assignment->id }}" class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                                        <td class="px-5 py-3">
+                                            <div class="flex items-center gap-3">
+                                                <x-user-avatar :user="$assignment->user" size="sm" />
+                                                <x-user-link :user="$assignment->user" class="text-zinc-900 dark:text-white" />
+                                            </div>
+                                        </td>
+                                        <td class="px-5 py-3 font-medium text-zinc-900 dark:text-white">{{ $assignment->membershipRenewal->name }}</td>
+                                        <td class="px-5 py-3">
+                                            @php $status = $assignment->user->membershipStatus(); @endphp
+                                            <span @class([
+                                                'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
+                                                'bg-huddle-comp/20 text-huddle-comp' => $status === 'active',
+                                                'bg-zinc-500/15 text-zinc-600 dark:text-zinc-300' => $status === 'expired',
+                                                'bg-zinc-500/10 text-zinc-500' => $status === 'none',
+                                            ])>
+                                                @if ($status === 'active')
+                                                    {{ __('Active') }}
+                                                @elseif ($status === 'expired')
+                                                    {{ __('Expired') }}
+                                                @else
+                                                    {{ __('None') }}
+                                                @endif
+                                            </span>
+                                        </td>
+                                        <td class="px-5 py-3">
+                                            <div class="flex justify-end gap-1">
+                                                <flux:button size="sm" variant="ghost" wire:click="openEditMembershipAssignmentModal({{ $assignment->id }})">
+                                                    <x-material-icon name="edit" class="text-[1rem]" />
+                                                </flux:button>
+                                                <flux:button
+                                                    size="sm"
+                                                    variant="danger"
+                                                    wire:click="deleteMembershipAssignment({{ $assignment->id }})"
+                                                    wire:confirm="{{ __('Remove :period membership from :name?', ['period' => $assignment->membershipRenewal->name, 'name' => $assignment->user->name]) }}"
+                                                >
+                                                    <x-material-icon name="delete" class="text-[1rem]" />
+                                                </flux:button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </div>
+        @endif
+    @endif
+
     @if ($activeTab === 'bank')
         <div class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900 sm:p-6">
             <flux:heading size="lg" class="inline-flex items-center gap-2">
@@ -255,7 +453,7 @@
         </div>
     @endif
 
-    <flux:modal wire:model="showUserModal" class="md:max-w-lg">
+    <flux:modal wire:model="showUserModal" class="md:max-w-2xl">
         <form wire:submit="saveUser" class="space-y-6">
             <div>
                 <flux:heading size="lg">
@@ -296,22 +494,10 @@
             @endif
 
             @if ($this->flags->isNotEmpty())
-                <div>
-                    <flux:heading size="sm" class="mb-3">{{ __('Tags') }}</flux:heading>
-                    <div class="flex flex-wrap gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-600">
-                        @foreach ($this->flags as $flag)
-                            <flux:checkbox
-                                wire:model="assignedFlagIds"
-                                :value="$flag->id"
-                                :label="$flag->name"
-                                wire:key="assign-flag-{{ $flag->id }}"
-                            />
-                        @endforeach
-                    </div>
-                    @error('assignedFlagIds')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
+                <x-tag-assign-select
+                    :flags="$this->flags"
+                    :selected-ids="$assignedFlagIds"
+                />
             @endif
 
             <div class="flex justify-end gap-2">
@@ -324,6 +510,60 @@
                     @else
                         {{ __('Create user') }}
                     @endif
+                </flux:button>
+            </div>
+        </form>
+    </flux:modal>
+
+    <flux:modal wire:model="showRenewalModal" class="md:max-w-lg">
+        <form wire:submit="saveRenewal" class="space-y-6">
+            <div>
+                <flux:heading size="lg">
+                    {{ $editingRenewalId ? __('Edit membership period') : __('Add membership period') }}
+                </flux:heading>
+                <flux:text class="mt-1">{{ __('Use the calendar year as the name (e.g. 2026). Dates fill in automatically.') }}</flux:text>
+            </div>
+
+            <flux:input wire:model.live="renewal_name" :label="__('Period')" placeholder="2026" required />
+            <flux:input wire:model="renewal_start_date" type="date" :label="__('Start date')" required />
+            <flux:input wire:model="renewal_end_date" type="date" :label="__('End date')" required />
+
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" variant="ghost" wire:click="closeRenewalModal">{{ __('Cancel') }}</flux:button>
+                <flux:button type="submit" variant="primary">
+                    {{ $editingRenewalId ? __('Save changes') : __('Create period') }}
+                </flux:button>
+            </div>
+        </form>
+    </flux:modal>
+
+    <flux:modal wire:model="showMembershipAssignmentModal" class="md:max-w-lg">
+        <form wire:submit="saveMembershipAssignment" class="space-y-6">
+            <div>
+                <flux:heading size="lg">
+                    {{ $editingMembershipAssignmentId ? __('Edit assignment') : __('Assign membership') }}
+                </flux:heading>
+                <flux:text class="mt-1">{{ __('Link a member to a membership period.') }}</flux:text>
+            </div>
+
+            <flux:select wire:model="membership_assignment_user_id" :label="__('Member')" required>
+                <flux:select.option value="">{{ __('Select a member…') }}</flux:select.option>
+                @foreach ($this->users as $user)
+                    <flux:select.option :value="$user->id">{{ $user->name }}</flux:select.option>
+                @endforeach
+            </flux:select>
+
+            <flux:select wire:model="membership_assignment_renewal_id" :label="__('Period')" required>
+                <flux:select.option value="">{{ __('Select a period…') }}</flux:select.option>
+                @foreach ($this->membershipRenewals as $renewal)
+                    <flux:select.option :value="$renewal->id">{{ $renewal->name }}</flux:select.option>
+                @endforeach
+            </flux:select>
+
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" variant="ghost" wire:click="closeMembershipAssignmentModal">{{ __('Cancel') }}</flux:button>
+                <flux:button type="submit" variant="primary">
+                    {{ $editingMembershipAssignmentId ? __('Save changes') : __('Assign') }}
                 </flux:button>
             </div>
         </form>

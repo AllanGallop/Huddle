@@ -184,8 +184,8 @@
                                         @else
                                             <div class="flex items-center justify-between gap-2 rounded-lg bg-white px-2 py-1.5 dark:bg-zinc-900">
                                                 <div class="flex min-w-0 items-center gap-2">
-                                                    <flux:avatar :name="$volunteer->user->name" :initials="$volunteer->user->initials()" size="sm" />
-                                                    <span class="truncate text-sm font-medium text-zinc-900 dark:text-white">{{ $volunteer->user->name }}</span>
+                                                    <x-user-avatar :user="$volunteer->user" size="sm" />
+                                                    <x-user-link :user="$volunteer->user" class="truncate text-sm text-zinc-900 dark:text-white" />
                                                 </div>
                                                 @if ($this->isAdmin)
                                                     <div class="flex shrink-0 gap-1">
@@ -220,7 +220,7 @@
                 <dl class="mt-4 space-y-3 text-sm">
                     <div>
                         <dt class="text-zinc-500">{{ __('Organised by') }}</dt>
-                        <dd class="font-medium text-zinc-900 dark:text-white">{{ $event->creator->name }}</dd>
+                        <dd><x-user-link :user="$event->creator" class="text-zinc-900 dark:text-white" /></dd>
                     </div>
                     @if ($event->created_at)
                         <div>

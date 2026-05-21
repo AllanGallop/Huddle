@@ -150,7 +150,7 @@ class Show extends Component
     #[Computed]
     public function volunteers()
     {
-        return $this->project->volunteers()->with('user')->get();
+        return $this->project->volunteers()->with(['user.membershipRenewalAssignments.membershipRenewal'])->get();
     }
 
     #[Computed]

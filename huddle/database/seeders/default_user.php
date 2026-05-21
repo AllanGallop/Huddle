@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\UserFlags;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class default_user extends Seeder
@@ -15,17 +14,14 @@ class default_user extends Seeder
      */
     public function run(): void
     {
-        UserFlags::create([
-            'name' => 'Committee',
-            'description' => 'Committee member',
-        ], [
-            'name' => 'Trustee',
-            'description' => 'Trustee'
-        ],
-        [
-            'name' => 'Keyholder',
-            'description' => 'Keyholder',
-        ]);
+        foreach ([
+            ['name' => 'Committee', 'description' => 'Committee member'],
+            ['name' => 'Trustee', 'description' => 'Trustee'],
+            ['name' => 'Keyholder', 'description' => 'Keyholder'],
+            ['name' => 'Mentor', 'description' => 'Accreditation Mentor'],
+        ] as $flag) {
+            UserFlags::firstOrCreate(['name' => $flag['name']], ['description' => $flag['description']]);
+        }
 
         User::create([
             'name' => 'Admin',
@@ -33,7 +29,6 @@ class default_user extends Seeder
             'password' => Hash::make('password'),
             'role_id' => 1,
         ]);
-
 
     }
 }

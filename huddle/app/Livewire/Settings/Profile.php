@@ -76,4 +76,19 @@ class Profile extends Component
         return ! Auth::user() instanceof MustVerifyEmail
             || (Auth::user() instanceof MustVerifyEmail && Auth::user()->hasVerifiedEmail());
     }
+
+    #[Computed]
+    public function membership()
+    {
+        return Auth::user()->load([
+            'role',
+            'flags',
+            'membershipRenewalAssignments' => fn ($query) => $query
+                ->with('membershipRenewal')
+                ->orderByDesc('membership_renewal_id'),
+            'accreditationAssignments' => fn ($query) => $query
+                ->with('accreditation')
+                ->orderBy('accreditation_id'),
+        ]);
+    }
 }

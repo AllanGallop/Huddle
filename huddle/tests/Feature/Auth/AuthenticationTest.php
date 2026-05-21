@@ -48,6 +48,34 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_login_is_rate_limited_after_repeated_failed_attempts(): void
+    {
+        $user = User::factory()->create();
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $this->post(route('login.store'), [
+                'email' => $user->email,
+                'password' => 'wrong-password',
+            ])->assertSessionHasErrorsIn('email');
+        }
+
+        $response = $this->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'wrong-password',
+        ]);
+
+        $response
+            ->assertRedirect()
+            ->assertSessionHasErrorsIn('email');
+
+        $this->assertStringContainsString(
+            'Too many login attempts',
+            session('errors')->get('email')[0],
+        );
+
+        $this->assertGuest();
+    }
+
     public function test_users_with_two_factor_enabled_are_redirected_to_two_factor_challenge(): void
     {
         if (! Features::canManageTwoFactorAuthentication()) {
