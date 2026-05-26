@@ -28,8 +28,8 @@
                 </div>
                 <flux:textarea wire:model="body" :label="__('Content (Markdown)')" rows="18" class="mt-4 font-mono text-sm" required />
                 <div class="mt-3 flex flex-wrap items-center gap-3">
-                    <flux:input type="file" wire:model="uploadedImage" accept="image/*" :label="__('Insert image')" />
-                    <flux:text class="text-sm text-zinc-500">{{ __('Uploading adds an image at the end of the content.') }}</flux:text>
+                    <flux:input type="file" wire:model="uploadedFile" accept="image/*,.pdf,application/pdf" :label="__('Insert image or PDF')" />
+                    <flux:text class="text-sm text-zinc-500">{{ __('Uploading adds an image embed or inline PDF viewer at the end of the content.') }}</flux:text>
                 </div>
                 <flux:input wire:model="change_summary" :label="__('Change summary (optional)')" class="mt-4" placeholder="{{ __('What changed in this revision?') }}" />
             </div>
@@ -52,7 +52,7 @@
                 <flux:text class="text-sm text-zinc-600 dark:text-zinc-400">
                     <strong>{{ __('Wiki links') }}:</strong> <code>[[page-slug]]</code> or <code>[[guides/setup|Label]]</code><br>
                     <strong>{{ __('Mermaid') }}:</strong> fenced code block with language <code>mermaid</code><br>
-                    <strong>{{ __('Images') }}:</strong> <code>![alt](url)</code> or upload above
+                    <strong>{{ __('Images / files') }}:</strong> <code>![alt](url)</code> or <code>[file.pdf](url)</code> (PDF links render inline)
                 </flux:text>
             </div>
 

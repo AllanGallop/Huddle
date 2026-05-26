@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DigestUnsubscribeController;
 use App\Http\Controllers\ProjectDocumentController;
+use App\Http\Controllers\WikiAssetController;
 use App\Http\Controllers\WikiImageUploadController;
 use App\Livewire\Admin\Index as AdminIndex;
 use App\Livewire\Dashboard;
@@ -88,6 +89,11 @@ Route::middleware(['auth', 'verified', 'mentor'])->group(function () {
         ->name('wiki.edit');
     Route::post('wiki/upload-image', WikiImageUploadController::class)->name('wiki.upload-image');
 });
+
+Route::get('wiki-file/{path}', WikiAssetController::class)
+    ->where('path', '.*')
+    ->middleware(['auth', 'verified'])
+    ->name('wiki.asset');
 
 Route::livewire('wiki/{path?}', WikiShow::class)
     ->where('path', '.*')

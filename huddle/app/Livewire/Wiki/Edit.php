@@ -8,6 +8,7 @@ use App\Models\WikiPageVersion;
 use App\Services\WikiPageService;
 use App\Support\WikiPathResolver;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rules\File;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -31,7 +32,7 @@ class Edit extends Component
 
     public ?int $wiki_directory_id = null;
 
-    public $uploadedImage;
+    public $uploadedFile;
 
     public ?int $restoreVersionId = null;
 
@@ -74,19 +75,19 @@ class Edit extends Component
         return $this->page ? __('Edit wiki page') : __('New wiki page');
     }
 
-    public function updatedUploadedImage(): void
+    public function updatedUploadedFile(): void
     {
         $this->validate([
-            'uploadedImage' => ['image', 'max:5120'],
+            'uploadedFile' => ['required', File::types(['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'])->max(10240)],
         ]);
 
-        $path = $this->uploadedImage->store('wiki/'.now()->format('Y/m'), 'public');
-        $url = asset('storage/'.$path);
+        $path = $this->uploadedFile->store('wiki/'.now()->format('Y/m'), 'public');
+        $url = route('wiki.asset', ['path' => $path]);
 
-        $this->body .= "\n\n".'![]('.$url.')';
-        $this->uploadedImage = null;
+        $this->body .= "\n\n".$this->assetMarkdown($url);
+        $this->uploadedFile = null;
 
-        session()->flash('status', __('Image inserted into content.'));
+        session()->flash('status', __('File inserted into content.'));
     }
 
     public function loadVersion(int $versionId): void
@@ -144,5 +145,14 @@ class Edit extends Component
     public function render()
     {
         return view('livewire.wiki.edit');
+    }
+
+    protected function assetMarkdown(string $url): string
+    {
+        if (str_starts_with((string) $this->uploadedFile?->getMimeType(), 'image/')) {
+            return '![]('.$url.')';
+        }
+
+        return '['.$this->uploadedFile->getClientOriginalName().']('.$url.')';
     }
 }

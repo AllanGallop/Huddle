@@ -15,6 +15,7 @@ class WikiMarkdown
         $markdown = $this->replaceWikiLinks($markdown);
         $html = Str::markdown($markdown);
         $html = $this->replaceMermaidBlocks($html);
+        $html = $this->replacePdfLinks($html);
 
         return $html;
     }
@@ -45,6 +46,23 @@ class WikiMarkdown
         return (string) preg_replace_callback(
             '/<pre><code class="language-mermaid">(.*?)<\/code><\/pre>/s',
             fn (array $matches): string => '<div class="mermaid">'.html_entity_decode($matches[1], ENT_QUOTES | ENT_HTML5).'</div>',
+            $html,
+        );
+    }
+
+    protected function replacePdfLinks(string $html): string
+    {
+        return (string) preg_replace_callback(
+            '/<p><a href="([^"]+\.pdf(?:\?[^"]*)?)">([^<]+)<\/a><\/p>/i',
+            function (array $matches): string {
+                $url = $matches[1];
+                $label = $matches[2];
+
+                return '<div class="wiki-pdf">'
+                    .'<iframe src="'.$url.'" title="'.e($label).'" loading="lazy"></iframe>'
+                    .'<p><a href="'.$url.'" target="_blank" rel="noopener noreferrer">'.$label.'</a></p>'
+                    .'</div>';
+            },
             $html,
         );
     }

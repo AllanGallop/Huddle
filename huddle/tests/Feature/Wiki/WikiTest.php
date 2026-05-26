@@ -12,6 +12,8 @@ use App\Services\WikiPageService;
 use App\Support\WikiMarkdown;
 use App\Support\WikiPathResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -59,6 +61,10 @@ class WikiTest extends TestCase
         $html = app(WikiMarkdown::class)->toHtml('Link: [[guides/other]]');
         $this->assertStringContainsString($other->url(), $html);
         $this->assertStringContainsString('class="mermaid"', app(WikiMarkdown::class)->toHtml("```mermaid\ngraph TD\n  A-->B\n```"));
+        $this->assertStringContainsString(
+            'class="wiki-pdf"',
+            app(WikiMarkdown::class)->toHtml('[Guide PDF](http://localhost/wiki-file/wiki/test-guide.pdf)'),
+        );
 
         app(WikiPageService::class)->update($page, [
             'title' => 'Setup v2',
@@ -94,5 +100,51 @@ class WikiTest extends TestCase
 
         $this->assertSame(3, $page->fresh()->versions()->count());
         $this->assertSame('Version one', $page->latestVersion->body);
+    }
+
+    public function test_mentor_can_upload_pdf_and_get_markdown_link(): void
+    {
+        Storage::fake('public');
+
+        $mentor = User::factory()->create(['role_id' => 2]);
+        $mentor->flags()->attach(UserFlags::create(['name' => 'Mentor', 'description' => 'Mentor']));
+
+        $response = $this->actingAs($mentor)->post(route('wiki.upload-image'), [
+            'file' => UploadedFile::fake()->create('guide.pdf', 200, 'application/pdf'),
+        ]);
+
+        $response->assertOk();
+
+        $markdown = $response->json('markdown');
+        $this->assertIsString($markdown);
+        $this->assertStringContainsString('[guide.pdf](', $markdown);
+        $this->assertStringContainsString('/wiki-file/wiki/', $markdown);
+
+        $assetUrl = $response->json('url');
+        $assetPath = parse_url($assetUrl, PHP_URL_PATH);
+
+        $this->actingAs($mentor)
+            ->get($assetPath)
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+    }
+
+    public function test_mentor_can_upload_image_and_get_image_markdown(): void
+    {
+        Storage::fake('public');
+
+        $mentor = User::factory()->create(['role_id' => 2]);
+        $mentor->flags()->attach(UserFlags::create(['name' => 'Mentor', 'description' => 'Mentor']));
+
+        $response = $this->actingAs($mentor)->post(route('wiki.upload-image'), [
+            'file' => UploadedFile::fake()->image('diagram.png'),
+        ]);
+
+        $response->assertOk();
+
+        $markdown = $response->json('markdown');
+        $this->assertIsString($markdown);
+        $this->assertStringStartsWith('![](', $markdown);
+        $this->assertStringContainsString('/wiki-file/wiki/', $markdown);
     }
 }

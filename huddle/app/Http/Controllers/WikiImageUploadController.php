@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\ValidationException;
 
 class WikiImageUploadController extends Controller
 {
@@ -13,15 +13,27 @@ class WikiImageUploadController extends Controller
     {
         abort_unless($request->user()?->canManageWiki(), 403);
 
-        $validated = $request->validate([
-            'image' => ['required', File::image()->max(5120)],
+        $request->validate([
+            'file' => ['nullable', File::types(['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'])->max(10240)],
+            'image' => ['nullable', File::types(['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'])->max(10240)],
         ]);
 
-        $path = $validated['image']->store('wiki/'.now()->format('Y/m'), 'public');
+        $uploadedFile = $request->file('file') ?? $request->file('image');
+
+        if (! $uploadedFile) {
+            throw ValidationException::withMessages([
+                'file' => __('Please choose a file to upload.'),
+            ]);
+        }
+
+        $path = $uploadedFile->store('wiki/'.now()->format('Y/m'), 'public');
+        $url = route('wiki.asset', ['path' => $path]);
 
         return response()->json([
-            'url' => Storage::disk('public')->url($path),
-            'markdown' => '![]('.Storage::disk('public')->url($path).')',
+            'url' => $url,
+            'markdown' => str_starts_with((string) $uploadedFile->getMimeType(), 'image/')
+                ? '![]('.$url.')'
+                : '['.$uploadedFile->getClientOriginalName().']('.$url.')',
         ]);
     }
 }
