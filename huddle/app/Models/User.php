@@ -198,6 +198,16 @@ class User extends Authenticatable
         return $this->isAdmin() || $this->isMentor();
     }
 
+    public function canManageForms(): bool
+    {
+        return $this->canAccessMentors();
+    }
+
+    public function canManageWiki(): bool
+    {
+        return $this->canAccessMentors();
+    }
+
     public function isAdmin(): bool
     {
         return $this->role_id === 1 || $this->role?->name === 'admin';

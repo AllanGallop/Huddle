@@ -24,6 +24,12 @@
                     <flux:sidebar.item icon="users" :href="route('members.index')" :current="request()->routeIs('members.*')" wire:navigate>
                         {{ __('Members') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="clipboard-document-list" :href="route('forms.index')" :current="request()->routeIs('forms.*')" wire:navigate>
+                        {{ __('Forms') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="book-open" :href="route('wiki.show')" :current="request()->routeIs('wiki.*')" wire:navigate>
+                        {{ __('Wiki') }}
+                    </flux:sidebar.item>
                     @if (auth()->user()->canAccessMentors())
                         <flux:sidebar.item icon="academic-cap" :href="route('mentors.index')" :current="request()->routeIs('mentors.*')" wire:navigate>
                             {{ __('Mentors') }}

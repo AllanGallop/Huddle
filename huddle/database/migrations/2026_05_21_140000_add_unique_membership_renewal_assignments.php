@@ -9,7 +9,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('membership_renewal_assignments', function (Blueprint $table) {
-            $table->unique(['user_id', 'membership_renewal_id']);
+            $table->unique(
+                ['user_id', 'membership_renewal_id'],
+                'mra_user_renewal_unique'
+            );
         });
     }
 

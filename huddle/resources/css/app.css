@@ -143,3 +143,72 @@ select:focus[data-flux-control] {
         'GRAD' 0,
         'opsz' 24;
 }
+
+.wiki-content {
+    @apply max-w-none text-zinc-800 dark:text-zinc-200;
+}
+
+.wiki-content h1 {
+    @apply mb-4 mt-8 text-3xl font-semibold first:mt-0;
+}
+
+.wiki-content h2 {
+    @apply mb-3 mt-6 text-2xl font-semibold;
+}
+
+.wiki-content h3 {
+    @apply mb-2 mt-4 text-xl font-semibold;
+}
+
+.wiki-content p {
+    @apply mb-4 leading-relaxed;
+}
+
+.wiki-content ul {
+    @apply mb-4 list-disc space-y-1 ps-6;
+}
+
+.wiki-content ol {
+    @apply mb-4 list-decimal space-y-1 ps-6;
+}
+
+.wiki-content a {
+    @apply font-medium text-huddle-primary underline-offset-2 hover:underline;
+}
+
+.wiki-content code {
+    @apply rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-sm text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200;
+}
+
+.wiki-content pre {
+    @apply mb-4 overflow-x-auto rounded-lg bg-zinc-100 p-4 dark:bg-zinc-800;
+}
+
+.wiki-content pre code {
+    @apply bg-transparent p-0;
+}
+
+.wiki-content blockquote {
+    @apply mb-4 border-s-4 border-huddle-primary/40 ps-4 italic text-zinc-600 dark:text-zinc-400;
+}
+
+.wiki-content img {
+    @apply my-4 max-w-full rounded-lg;
+}
+
+.wiki-content table {
+    @apply mb-4 w-full border-collapse text-sm;
+}
+
+.wiki-content th,
+.wiki-content td {
+    @apply border border-zinc-200 px-3 py-2 dark:border-zinc-700;
+}
+
+.wiki-content th {
+    @apply bg-zinc-50 font-semibold dark:bg-zinc-800;
+}
+
+.wiki-content .mermaid {
+    @apply my-6 flex justify-center overflow-x-auto rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800/50;
+}
