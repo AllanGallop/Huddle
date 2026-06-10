@@ -27,9 +27,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role_id',
         'digest_opt_out',
         'last_digest_sent_at',
+        'privacy_policy_accepted_at',
+        'privacy_policy_version',
     ];
 
     /**
@@ -56,6 +57,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'digest_opt_out' => 'boolean',
             'last_digest_sent_at' => 'datetime',
+            'privacy_policy_accepted_at' => 'datetime',
         ];
     }
 
@@ -91,6 +93,65 @@ class User extends Authenticatable
     public function membershipRenewalAssignments(): HasMany
     {
         return $this->hasMany(MembershipRenewalAssignment::class);
+    }
+
+    public function projectComments(): HasMany
+    {
+        return $this->hasMany(ProjectComment::class);
+    }
+
+    public function eventComments(): HasMany
+    {
+        return $this->hasMany(EventComment::class);
+    }
+
+    public function ledProjects(): HasMany
+    {
+        return $this->hasMany(Project::class, 'leader_id');
+    }
+
+    public function createdProjects(): HasMany
+    {
+        return $this->hasMany(Project::class, 'created_by');
+    }
+
+    public function projectVolunteers(): HasMany
+    {
+        return $this->hasMany(ProjectVolunteer::class);
+    }
+
+    public function eventVolunteers(): HasMany
+    {
+        return $this->hasMany(EventVolunteer::class);
+    }
+
+    public function createdEvents(): HasMany
+    {
+        return $this->hasMany(Event::class, 'created_by');
+    }
+
+    public function formSubmissions(): HasMany
+    {
+        return $this->hasMany(FormSubmission::class);
+    }
+
+    public function wikiPageVersions(): HasMany
+    {
+        return $this->hasMany(WikiPageVersion::class, 'created_by');
+    }
+
+    public function hasAcceptedPrivacyPolicy(): bool
+    {
+        return $this->privacy_policy_accepted_at !== null
+            && $this->privacy_policy_version === config('gdpr.policy_version');
+    }
+
+    public function acceptPrivacyPolicy(): void
+    {
+        $this->forceFill([
+            'privacy_policy_accepted_at' => now(),
+            'privacy_policy_version' => config('gdpr.policy_version'),
+        ])->save();
     }
 
     public function latestMembershipRenewalAssignment(): ?MembershipRenewalAssignment
@@ -210,7 +271,12 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role_id === 1 || $this->role?->name === 'admin';
+        return $this->role?->name === 'admin';
+    }
+
+    public function canViewFinancialReports(): bool
+    {
+        return $this->isAdmin() || $this->hasFlag('Committee');
     }
 
     public function ownsProject(Project $project): bool

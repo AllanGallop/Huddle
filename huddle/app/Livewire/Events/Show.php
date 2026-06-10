@@ -44,7 +44,7 @@ class Show extends Component
 
     public function mount(Event $event): void
     {
-        abort_unless(Auth::user()->canViewEvent($event), 403);
+        $this->authorize('view', $event);
 
         $this->event = $event->load('creator');
     }
@@ -291,16 +291,12 @@ class Show extends Component
 
     protected function authorizeManageEvent(): void
     {
-        if (! Auth::user()->canManageEvent($this->event)) {
-            abort(403);
-        }
+        $this->authorize('update', $this->event);
     }
 
     protected function authorizeAdmin(): void
     {
-        if (! Auth::user()->isAdmin()) {
-            abort(403);
-        }
+        $this->authorize('manageVolunteers', $this->event);
     }
 
     public function render()

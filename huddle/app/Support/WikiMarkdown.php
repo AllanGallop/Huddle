@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Support\Str;
+use Stevebauman\Purify\Facades\Purify;
 
 class WikiMarkdown
 {
@@ -17,7 +18,7 @@ class WikiMarkdown
         $html = $this->replaceMermaidBlocks($html);
         $html = $this->replacePdfLinks($html);
 
-        return $html;
+        return Purify::config('wiki')->clean($html);
     }
 
     protected function replaceWikiLinks(string $markdown): string
@@ -58,12 +59,29 @@ class WikiMarkdown
                 $url = $matches[1];
                 $label = $matches[2];
 
+                if (! $this->isAllowedWikiAssetUrl($url)) {
+                    return '<p><a href="'.e($url).'" target="_blank" rel="noopener noreferrer">'.e($label).'</a></p>';
+                }
+
                 return '<div class="wiki-pdf">'
-                    .'<iframe src="'.$url.'" title="'.e($label).'" loading="lazy"></iframe>'
-                    .'<p><a href="'.$url.'" target="_blank" rel="noopener noreferrer">'.$label.'</a></p>'
+                    .'<iframe src="'.e($url).'" title="'.e($label).'" loading="lazy"></iframe>'
+                    .'<p><a href="'.e($url).'" target="_blank" rel="noopener noreferrer">'.e($label).'</a></p>'
                     .'</div>';
             },
             $html,
         );
+    }
+
+    protected function isAllowedWikiAssetUrl(string $url): bool
+    {
+        $path = parse_url($url, PHP_URL_PATH);
+
+        if (! is_string($path) || ! str_starts_with($path, '/wiki-file/')) {
+            return false;
+        }
+
+        $assetPath = ltrim(substr($path, strlen('/wiki-file/')), '/');
+
+        return str_starts_with($assetPath, 'wiki/');
     }
 }

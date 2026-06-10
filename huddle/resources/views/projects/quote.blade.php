@@ -3,8 +3,12 @@
 <x-layouts.document
     :title="__('Quote') . ' — ' . $project->name"
     :project="$project"
-    document-type="quote"
     :for-pdf="$forPdf"
+    :pdf-url="route('projects.quote.pdf', $project)"
+    :email-action="route('projects.quote.email', $project)"
+    :back-url="route('projects.show', $project)"
+    :back-label="__('Back to project')"
+    :recipient-email="$project->leader->email"
 >
     <h1>{{ __('Quote') }}</h1>
     <p class="meta">

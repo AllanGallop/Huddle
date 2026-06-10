@@ -206,12 +206,13 @@ class Index extends Component
             'password' => $this->passwordRules(),
         ]);
 
-        $user = User::create([
+        $user = new User([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'role_id' => $validated['role_id'],
             'password' => $validated['password'],
         ]);
+        $user->role_id = $validated['role_id'];
+        $user->save();
 
         $this->syncUserFlags($user);
 
@@ -227,12 +228,13 @@ class Index extends Component
             'role_id' => ['required', 'exists:roles,id'],
         ]);
 
-        $user = User::create([
+        $user = new User([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'role_id' => $validated['role_id'],
             'password' => Hash::make(Str::password(32)),
         ]);
+        $user->role_id = $validated['role_id'];
+        $user->save();
 
         $token = Password::broker()->createToken($user);
         $user->notify(new UserInvitationNotification($token));
@@ -259,11 +261,12 @@ class Index extends Component
 
         $validated = $this->validate($rules);
 
-        $user->update([
+        $user->fill([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'role_id' => $validated['role_id'],
         ]);
+        $user->role_id = $validated['role_id'];
+        $user->save();
 
         if (! empty($validated['password'] ?? null)) {
             $user->update(['password' => $validated['password']]);
@@ -520,13 +523,21 @@ class Index extends Component
             return;
         }
 
-        if ($user->isAdmin() && User::query()->where('role_id', 1)->count() <= 1) {
+        if ($user->isAdmin() && User::query()->whereHas('role', fn ($query) => $query->where('name', 'admin'))->count() <= 1) {
             $this->addError('user', __('You cannot remove the only admin account.'));
 
             return;
         }
 
-        $user->delete();
+        $erasure = app(\App\Services\UserDataErasureService::class);
+
+        if ($erasure->isPlaceholder($user)) {
+            $this->addError('user', __('This system account cannot be deleted.'));
+
+            return;
+        }
+
+        $erasure->erase($user);
 
         unset($this->users);
         session()->flash('status', __('User deleted successfully.'));

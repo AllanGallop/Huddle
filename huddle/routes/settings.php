@@ -3,6 +3,7 @@
 use App\Livewire\Settings\Appearance;
 use App\Livewire\Settings\Notifications;
 use App\Livewire\Settings\Password;
+use App\Livewire\Settings\Privacy;
 use App\Livewire\Settings\Profile;
 use App\Livewire\Settings\TwoFactor;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +14,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::livewire('settings/profile', Profile::class)->name('profile.edit');
     Route::livewire('settings/notifications', Notifications::class)->name('notifications.edit');
+    Route::livewire('settings/privacy', Privacy::class)->name('privacy.edit');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {

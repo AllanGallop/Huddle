@@ -6,8 +6,12 @@
 <x-layouts.document
     :title="__('Invoice') . ' — ' . $project->name"
     :project="$project"
-    document-type="invoice"
     :for-pdf="$forPdf"
+    :pdf-url="route('projects.invoice.pdf', $project)"
+    :email-action="route('projects.invoice.email', $project)"
+    :back-url="route('projects.show', $project)"
+    :back-label="__('Back to project')"
+    :recipient-email="$project->leader->email"
 >
     <h1>{{ __('Invoice') }}</h1>
     <p class="meta">

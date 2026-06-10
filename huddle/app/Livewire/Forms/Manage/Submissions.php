@@ -14,7 +14,7 @@ class Submissions extends Component
 
     public function mount(Form $form): void
     {
-        abort_unless($form->canManage(Auth::user()), 403);
+        $this->authorize('manage', $form);
 
         $this->form = $form;
     }

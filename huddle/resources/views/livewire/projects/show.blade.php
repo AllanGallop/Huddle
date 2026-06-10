@@ -124,24 +124,26 @@
                     @endif
                 </div>
 
-                <form wire:submit="uploadImage" class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <input
-                        type="file"
-                        wire:model="photo"
-                        accept="image/*"
-                        class="block w-full text-sm text-zinc-500 file:me-3 file:rounded-md file:border-0 file:bg-huddle-primary/10 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-huddle-primary hover:file:bg-huddle-primary/20"
-                    />
-                    <flux:button type="submit" variant="primary" size="sm" wire:loading.attr="disabled" wire:target="photo,uploadImage" class="shrink-0">
-                        <span class="inline-flex items-center gap-1.5">
-                            <x-material-icon name="add_photo_alternate" class="text-[1.125rem]" />
-                            {{ __('Upload') }}
-                        </span>
-                    </flux:button>
-                </form>
-                @error('photo')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-                <div wire:loading wire:target="photo" class="mt-1 text-xs text-zinc-500">{{ __('Uploading...') }}</div>
+                @if ($this->canManageProject)
+                    <form wire:submit="uploadImage" class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <input
+                            type="file"
+                            wire:model="photo"
+                            accept="image/*"
+                            class="block w-full text-sm text-zinc-500 file:me-3 file:rounded-md file:border-0 file:bg-huddle-primary/10 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-huddle-primary hover:file:bg-huddle-primary/20"
+                        />
+                        <flux:button type="submit" variant="primary" size="sm" wire:loading.attr="disabled" wire:target="photo,uploadImage" class="shrink-0">
+                            <span class="inline-flex items-center gap-1.5">
+                                <x-material-icon name="add_photo_alternate" class="text-[1.125rem]" />
+                                {{ __('Upload') }}
+                            </span>
+                        </flux:button>
+                    </form>
+                    @error('photo')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                    <div wire:loading wire:target="photo" class="mt-1 text-xs text-zinc-500">{{ __('Uploading...') }}</div>
+                @endif
 
                 @if ($this->images->isEmpty())
                     <div class="mt-4 flex h-32 items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800/40">

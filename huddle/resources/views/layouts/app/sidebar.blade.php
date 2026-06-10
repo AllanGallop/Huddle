@@ -18,6 +18,9 @@
                     <flux:sidebar.item icon="layout-grid" :href="route('projects.index')" :current="request()->routeIs('projects.*')" wire:navigate>
                         {{ __('Projects') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="presentation-chart-bar" :href="route('reports.index')" :current="request()->routeIs('reports.*')" wire:navigate>
+                        {{ __('Reports') }}
+                    </flux:sidebar.item>
                     <flux:sidebar.item icon="calendar" :href="route('events.index')" :current="request()->routeIs('events.*')" wire:navigate>
                         {{ __('Events') }}
                     </flux:sidebar.item>
@@ -104,6 +107,8 @@
         </flux:header>
 
         {{ $slot }}
+
+        <x-cookie-consent />
 
         @fluxScripts
     </body>

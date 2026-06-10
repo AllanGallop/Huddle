@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'mentor' => \App\Http\Middleware\EnsureUserCanAccessMentors::class,
+            'privacy.accepted' => \App\Http\Middleware\EnsurePrivacyPolicyAccepted::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

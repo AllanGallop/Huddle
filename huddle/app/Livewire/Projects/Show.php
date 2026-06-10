@@ -381,7 +381,7 @@ class Show extends Component
         $this->authorizeManageProject();
 
         foreach ($this->project->images as $image) {
-            Storage::disk('public')->delete($image->image_url);
+            Storage::disk($image->storageDisk())->delete($image->image_url);
         }
 
         $this->project->delete();
@@ -427,11 +427,13 @@ class Show extends Component
 
     public function uploadImage(): void
     {
+        $this->authorize('uploadImage', $this->project);
+
         $this->validate([
             'photo' => ['required', 'image', 'max:5120'],
         ]);
 
-        $path = $this->photo->store('projects/'.$this->project->id, 'public');
+        $path = $this->photo->store('projects/'.$this->project->id, 'local');
 
         ProjectImage::create([
             'project_id' => $this->project->id,
@@ -445,15 +447,13 @@ class Show extends Component
 
     public function deleteImage(int $imageId): void
     {
-        if (! $this->canManageProject) {
-            abort(403);
-        }
+        $this->authorize('uploadImage', $this->project);
 
         $image = ProjectImage::query()
             ->where('project_id', $this->project->id)
             ->findOrFail($imageId);
 
-        Storage::disk('public')->delete($image->image_url);
+        Storage::disk($image->storageDisk())->delete($image->image_url);
         $image->delete();
 
         unset($this->images, $this->activeImage);
@@ -559,23 +559,17 @@ class Show extends Component
 
     protected function authorizeManageProject(): void
     {
-        if (! Auth::user()->canManageProject($this->project)) {
-            abort(403);
-        }
+        $this->authorize('update', $this->project);
     }
 
     protected function authorizeAdmin(): void
     {
-        if (! Auth::user()->isAdmin()) {
-            abort(403);
-        }
+        $this->authorize('manageVolunteers', $this->project);
     }
 
     protected function authorizeFinancials(): void
     {
-        if (! Auth::user()->canManageProjectFinancials($this->project)) {
-            abort(403);
-        }
+        $this->authorize('manageFinancials', $this->project);
     }
 
     public function render()

@@ -1,12 +1,24 @@
 @props([
     'title' => config('app.name'),
-    'project',
-    'documentType' => 'document',
+    'project' => null,
     'forPdf' => false,
+    'pdfUrl' => null,
+    'emailAction' => null,
+    'backUrl' => null,
+    'backLabel' => __('Back'),
+    'recipientEmail' => '',
+    'emailFields' => [],
+    'paperOrientation' => 'portrait',
+    'paperMargin' => '16mm',
+    'forceLightMode' => false,
+    'showHeader' => true,
+    'showFooter' => true,
 ])
 
 @php
     $bannerSrc = \App\Support\Branding::bannerSrc($forPdf);
+    $hasToolbar = ! $forPdf && ($pdfUrl || $backUrl || $emailAction);
+    $bodyMaxWidth = $paperOrientation === 'landscape' ? 'none' : '52rem';
 @endphp
 
 <!DOCTYPE html>
@@ -14,8 +26,21 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        @if ($forceLightMode)
+            <meta name="color-scheme" content="light">
+        @endif
         <title>{{ $title }}</title>
         <style>
+            @page {
+                size: A4 {{ $paperOrientation }};
+                margin: {{ $paperMargin }};
+            }
+            html {
+                @if ($forceLightMode)
+                    color-scheme: light;
+                    background: #ffffff;
+                @endif
+            }
             * { box-sizing: border-box; }
             body {
                 font-family: ui-sans-serif, system-ui, sans-serif;
@@ -23,8 +48,11 @@
                 line-height: 1.5;
                 margin: 0;
                 padding: 2rem;
-                max-width: 52rem;
+                max-width: {{ $bodyMaxWidth }};
                 margin-inline: auto;
+                @if ($forceLightMode)
+                    background: #ffffff;
+                @endif
             }
             .doc-header {
                 margin-bottom: 2rem;
@@ -85,6 +113,13 @@
                 color: white;
                 border-color: #287878;
             }
+            @if ($forceLightMode)
+                .toolbar input[type="email"],
+                .toolbar a,
+                .toolbar button {
+                    color-scheme: light;
+                }
+            @endif
             .status-msg {
                 margin-bottom: 1rem;
                 padding: 0.75rem 1rem;
@@ -106,25 +141,48 @@
                 <p class="status-msg no-print">{{ session('status') }}</p>
             @endif
 
-            <div class="toolbar no-print">
-                <button type="button" onclick="window.print()">{{ __('Print') }}</button>
-                <a href="{{ $documentType === 'quote' ? route('projects.quote.pdf', $project) : route('projects.invoice.pdf', $project) }}">{{ __('Download PDF') }}</a>
-                <a href="{{ route('projects.show', $project) }}">{{ __('Back to project') }}</a>
+            @if ($hasToolbar)
+                <div class="toolbar no-print">
+                    <button type="button" onclick="window.print()">{{ __('Print') }}</button>
 
-                <form method="POST" action="{{ $documentType === 'quote' ? route('projects.quote.email', $project) : route('projects.invoice.email', $project) }}">
-                    @csrf
-                    <input type="email" name="email" value="{{ old('email', $project->leader->email) }}" required placeholder="{{ __('Recipient email') }}">
-                    <button type="submit" class="primary">{{ __('Email PDF') }}</button>
-                </form>
-            </div>
+                    @if ($pdfUrl)
+                        <a href="{{ $pdfUrl }}">{{ __('Download PDF') }}</a>
+                    @endif
+
+                    @if ($backUrl)
+                        <a href="{{ $backUrl }}">{{ $backLabel }}</a>
+                    @endif
+
+                    @if ($emailAction)
+                        <form method="POST" action="{{ $emailAction }}">
+                            @csrf
+                            @foreach ($emailFields as $name => $value)
+                                @if (is_array($value))
+                                    @foreach ($value as $entry)
+                                        <input type="hidden" name="{{ $name }}[]" value="{{ $entry }}">
+                                    @endforeach
+                                @elseif ($value !== null && $value !== '' && $value !== false)
+                                    <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                                @endif
+                            @endforeach
+                            <input type="email" name="email" value="{{ old('email', $recipientEmail) }}" required placeholder="{{ __('Recipient email') }}">
+                            <button type="submit" class="primary">{{ __('Email PDF') }}</button>
+                        </form>
+                    @endif
+                </div>
+            @endif
         @endunless
 
-        <header class="doc-header">
-            <img src="{{ $bannerSrc }}" alt="{{ config('app.name') }}" class="banner">
-        </header>
+        @if ($showHeader)
+            <header class="doc-header">
+                <img src="{{ $bannerSrc }}" alt="{{ config('app.name') }}" class="banner">
+            </header>
+        @endif
 
         {{ $slot }}
 
-        <p class="footer">{{ config('app.name') }} · {{ now()->format('j F Y') }}</p>
+        @if ($showFooter)
+            <p class="footer">{{ config('app.name') }} · {{ now()->format('j F Y') }}</p>
+        @endif
     </body>
 </html>

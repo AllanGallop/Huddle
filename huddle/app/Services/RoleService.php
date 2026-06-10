@@ -4,56 +4,70 @@ namespace App\Services;
 
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 
-class RoleService {
-
-    static function getRoles() {
+class RoleService
+{
+    public static function getRoles()
+    {
         return Role::all();
     }
 
-    static function getRoleById($id) {
+    public static function getRoleById($id)
+    {
         return Role::find($id);
     }
 
-    static function getRoleByName($name) {
+    public static function getRoleByName($name)
+    {
         return Role::where('name', $name)->first();
     }
 
-    static function createRole($name) {
+    public static function createRole($name)
+    {
         return Role::create(['name' => $name]);
     }
 
-    static function updateRole($id, $name) {
+    public static function updateRole($id, $name)
+    {
         return Role::where('id', $id)->update(['name' => $name]);
     }
 
-    static function deleteRole($id) {
-        // Reset all users to member role
-        User::where('role_id', $id)->update(['role_id' => 2]);
-        // Delete role
+    public static function deleteRole($id)
+    {
+        $memberRoleId = Role::query()->where('name', 'member')->value('id');
+
+        if ($memberRoleId) {
+            User::where('role_id', $id)->update(['role_id' => $memberRoleId]);
+        }
+
         Role::where('id', $id)->delete();
     }
 
-    static function assignRoleToUser($userId, $roleId) {
-        // User must be admin to assign role to user
-        if (Auth::user()->role_id !== 1) {
+    public static function assignRoleToUser($userId, $roleId)
+    {
+        if (! Auth::user()?->isAdmin()) {
             throw new \Exception('User must be admin to assign role to user');
         }
-        // Assign role to user
+
         User::where('id', $userId)->update(['role_id' => $roleId]);
     }
 
-    static function removeRoleFromUser($userId) {
-        // User must be admin to remove role from user
-        if (Auth::user()->role_id !== 1) {
+    public static function removeRoleFromUser($userId)
+    {
+        if (! Auth::user()?->isAdmin()) {
             throw new \Exception('User must be admin to remove role from user');
         }
-        // Reset user to member role
-        User::where('id', $userId)->update(['role_id' => 2]);
+
+        $memberRoleId = Role::query()->where('name', 'member')->value('id');
+
+        if ($memberRoleId) {
+            User::where('id', $userId)->update(['role_id' => $memberRoleId]);
+        }
     }
 
-    static function userHasRole($roleId) {
-        $currentUserRole = Auth::user()->role_id;
-        return $currentUserRole === $roleId;
+    public static function userHasRole($roleId)
+    {
+        return Auth::user()?->role_id === $roleId;
     }
 }

@@ -290,11 +290,17 @@
             <flux:input wire:model="name" :label="__('Name')" required />
             <flux:textarea wire:model="description" :label="__('Description')" rows="4" required />
 
-            <flux:select wire:model="leader_id" :label="__('Project leader')">
-                @foreach ($this->users as $user)
-                    <flux:select.option :value="$user->id">{{ $user->name }}</flux:select.option>
-                @endforeach
-            </flux:select>
+            @if (auth()->user()->can('assignLeader', \App\Models\Project::class))
+                <flux:select wire:model="leader_id" :label="__('Project leader')">
+                    @foreach ($this->users as $user)
+                        <flux:select.option :value="$user->id">{{ $user->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            @else
+                <flux:text class="text-sm text-zinc-600 dark:text-zinc-300">
+                    {{ __('You will be assigned as the project leader.') }}
+                </flux:text>
+            @endif
 
             <flux:select wire:model="project_status" :label="__('Status')">
                 @foreach (\App\Models\Project::STATUSES as $status)

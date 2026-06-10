@@ -6,6 +6,7 @@ use App\Models\Form;
 use App\Models\FormSubmission;
 use App\Services\FormSubmissionService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -22,7 +23,7 @@ class Take extends Component
 
     public function mount(Form $form): void
     {
-        abort_unless($form->canTake(Auth::user()), 404);
+        $this->authorize('take', $form);
 
         $form->load(['questions.options']);
 
@@ -60,7 +61,9 @@ class Take extends Component
     public function submit(FormSubmissionService $service): void
     {
         if ($this->submitted) {
-            return;
+            throw ValidationException::withMessages([
+                'form' => __('You have already submitted this form.'),
+            ]);
         }
 
         $this->submission = $service->submit($this->form, Auth::user(), $this->answers);

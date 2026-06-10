@@ -97,6 +97,11 @@ class Project extends Model
         return str($this->project_status)->headline()->toString();
     }
 
+    public function formattedId(int $length = 4): string
+    {
+        return str_pad((string) $this->id, $length, '0', STR_PAD_LEFT);
+    }
+
     public function financialStatusLabel(): ?string
     {
         if (! $this->financial_status) {

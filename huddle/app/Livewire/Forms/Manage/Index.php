@@ -24,7 +24,7 @@ class Index extends Component
     public function deleteForm(int $formId): void
     {
         $form = Form::query()->findOrFail($formId);
-        abort_unless($form->canManage(Auth::user()), 403);
+        $this->authorize('manage', $form);
 
         $form->delete();
 

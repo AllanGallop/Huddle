@@ -1,7 +1,7 @@
 <section class="mt-10 space-y-6">
     <div class="relative mb-5">
         <flux:heading>{{ __('Delete account') }}</flux:heading>
-        <flux:subheading>{{ __('Delete your account and all of its resources') }}</flux:subheading>
+        <flux:subheading>{{ __('Permanently erase your account and personal data') }}</flux:subheading>
     </div>
 
     <flux:modal.trigger name="confirm-user-deletion">
@@ -16,7 +16,7 @@
                 <flux:heading size="lg">{{ __('Are you sure you want to delete your account?') }}</flux:heading>
 
                 <flux:subheading>
-                    {{ __('Once your account is deleted, all of its resources and data will be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.') }}
+                    {{ __('Your personal data will be erased. Comments and volunteer sign-ups are removed; projects and wiki history are reassigned to a generic deleted member record. Please enter your password to confirm.') }}
                 </flux:subheading>
             </div>
 

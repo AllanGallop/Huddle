@@ -136,14 +136,27 @@ class Index extends Component
 
     public function createProject(): void
     {
-        $validated = $this->validate([
+        $this->authorize('create', Project::class);
+
+        $user = Auth::user();
+
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string'],
             'project_status' => ['required', 'in:'.implode(',', Project::STATUSES)],
             'volunteer_required' => ['boolean'],
-            'leader_id' => ['required', 'exists:users,id'],
             'due_date' => ['nullable', 'date'],
-        ]);
+        ];
+
+        if ($user->can('assignLeader', Project::class)) {
+            $rules['leader_id'] = ['required', 'exists:users,id'];
+        }
+
+        $validated = $this->validate($rules);
+
+        if (! $user->can('assignLeader', Project::class)) {
+            $validated['leader_id'] = $user->id;
+        }
 
         $project = Project::create([
             ...$validated,

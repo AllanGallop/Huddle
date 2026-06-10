@@ -102,10 +102,7 @@ class ProjectDocumentController extends Controller
 
     protected function authorizeFinancials(Request $request, Project $project): void
     {
-        abort_unless(
-            $request->user()?->canManageProjectFinancials($project),
-            403,
-        );
+        $this->authorize('manageFinancials', $project);
     }
 
     protected function ensureQuoteAmount(Project $project): void

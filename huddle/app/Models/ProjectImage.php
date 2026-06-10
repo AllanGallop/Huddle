@@ -18,8 +18,20 @@ class ProjectImage extends Model
         return $this->belongsTo(Project::class);
     }
 
+    public function storageDisk(): string
+    {
+        if (Storage::disk('local')->exists($this->image_url)) {
+            return 'local';
+        }
+
+        return 'public';
+    }
+
     public function url(): string
     {
-        return Storage::disk('public')->url($this->image_url);
+        return route('projects.image', [
+            'project' => $this->project_id,
+            'projectImage' => $this->id,
+        ]);
     }
 }

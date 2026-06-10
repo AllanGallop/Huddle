@@ -31,8 +31,8 @@ class Edit extends Component
 
     public function mount(?Form $form = null): void
     {
-        if ($form) {
-            abort_unless($form->canManage(Auth::user()), 403);
+        if ($form?->exists) {
+            $this->authorize('manage', $form);
             $form->load(['questions.options']);
             $this->form = $form;
             $this->title = $form->title;
@@ -54,6 +54,8 @@ class Edit extends Component
                     'is_correct' => $option->is_correct,
                 ])->all(),
             ])->all();
+        } else {
+            $this->authorize('create', Form::class);
         }
     }
 
