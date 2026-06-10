@@ -161,7 +161,7 @@ class Index extends Component
             'assignment_user_id' => [
                 'required',
                 'exists:users,id',
-                Rule::unique('accreditation_assignments')
+                Rule::unique('accreditation_assignments', 'user_id')
                     ->where(fn ($query) => $query->where('accreditation_id', $this->assignment_accreditation_id))
                     ->ignore($this->editingAssignmentId),
             ],

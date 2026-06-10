@@ -13,6 +13,10 @@ class OrganizationSetting extends Model
         'account_number',
         'iban',
         'payment_instructions',
+        'logo_path',
+        'favicon_path',
+        'banner_light_path',
+        'banner_dark_path',
     ];
 
     public static function instance(): self
@@ -27,5 +31,13 @@ class OrganizationSetting extends Model
             || $this->sort_code
             || $this->account_number
             || $this->iban;
+    }
+
+    public function hasCustomBranding(): bool
+    {
+        return $this->logo_path
+            || $this->favicon_path
+            || $this->banner_light_path
+            || $this->banner_dark_path;
     }
 }

@@ -125,24 +125,19 @@
                 </div>
 
                 @if ($this->canManageProject)
-                    <form wire:submit="uploadImage" class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <div class="mt-4">
                         <input
                             type="file"
                             wire:model="photo"
                             accept="image/*"
                             class="block w-full text-sm text-zinc-500 file:me-3 file:rounded-md file:border-0 file:bg-huddle-primary/10 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-huddle-primary hover:file:bg-huddle-primary/20"
                         />
-                        <flux:button type="submit" variant="primary" size="sm" wire:loading.attr="disabled" wire:target="photo,uploadImage" class="shrink-0">
-                            <span class="inline-flex items-center gap-1.5">
-                                <x-material-icon name="add_photo_alternate" class="text-[1.125rem]" />
-                                {{ __('Upload') }}
-                            </span>
-                        </flux:button>
-                    </form>
-                    @error('photo')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                    <div wire:loading wire:target="photo" class="mt-1 text-xs text-zinc-500">{{ __('Uploading...') }}</div>
+                        @error('photo')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                        <div wire:loading wire:target="photo" class="mt-1 text-xs text-zinc-500">{{ __('Uploading...') }}</div>
+                        <div wire:loading.remove wire:target="photo" class="mt-1 text-xs text-zinc-500">{{ __('Images save automatically after you choose a file.') }}</div>
+                    </div>
                 @endif
 
                 @if ($this->images->isEmpty())
@@ -151,14 +146,20 @@
                     </div>
                 @else
                     <div class="relative mt-4">
-                        <div class="relative mx-auto max-w-md overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800">
-                            <div class="aspect-[4/3] max-h-40">
+                        <div class="relative mx-auto w-fit max-w-md overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800">
+                            <button
+                                type="button"
+                                wire:click="openImageModal"
+                                class="flex w-full cursor-zoom-in items-center justify-center p-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-huddle-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"
+                                aria-label="{{ __('View full size image') }}"
+                            >
                                 <img
                                     src="{{ $this->activeImage->url() }}"
                                     alt="{{ $project->name }}"
-                                    class="size-full object-cover"
+                                    class="max-h-12 max-w-full object-contain"
+                                    style="max-height: 12rem;"
                                 />
-                            </div>
+                            </button>
 
                             @if ($this->images->count() > 1)
                                 <button
@@ -199,7 +200,7 @@
                                     wire:click="setActiveImage({{ $index }})"
                                     wire:key="thumb-{{ $image->id }}"
                                     @class([
-                                        'size-14 shrink-0 overflow-hidden rounded-md border-2 transition',
+                                        'size-14 shrink-0 overflow-hidden rounded-md border-2 bg-zinc-100 transition dark:bg-zinc-800',
                                         'border-huddle-primary ring-2 ring-huddle-primary/30' => $this->activeImageIndex === $index,
                                         'border-transparent opacity-70 hover:opacity-100' => $this->activeImageIndex !== $index,
                                     ])
@@ -208,7 +209,7 @@
                                     <img
                                         src="{{ $image->url() }}"
                                         alt=""
-                                        class="size-full object-cover"
+                                        class="size-full object-contain"
                                     />
                                 </button>
                             @endforeach
@@ -394,6 +395,22 @@
     @if ($this->canManageFinancials && $activeTab === 'finance')
         @include('livewire.projects.partials.financial')
     @endif
+
+    <flux:modal wire:model="showImageModal" class="max-w-5xl p-0">
+        <div class="relative">
+            <img
+                src="{{ $this->activeImage?->url() }}"
+                alt="{{ $project->name }}"
+                class="max-h-[85vh] w-full object-contain"
+            />
+
+            @if ($this->images->count() > 1)
+                <div class="absolute bottom-3 start-1/2 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-xs text-white">
+                    {{ $this->activeImageIndex + 1 }} / {{ $this->images->count() }}
+                </div>
+            @endif
+        </div>
+    </flux:modal>
 
     <flux:modal wire:model="showEditModal" class="md:max-w-2xl">
         <form wire:submit="updateProject" class="space-y-6">

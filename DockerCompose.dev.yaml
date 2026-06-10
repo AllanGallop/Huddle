@@ -1,3 +1,4 @@
+# Normal development — does not reset .env or the database on container start.
 services:
   app:
     build:
@@ -8,14 +9,7 @@ services:
     volumes:
       - ./huddle:/var/www/html
     environment:
-      HUDDLE_FRESH_INSTALL: "1"
-      HUDDLE_SETUP_DB_CONNECTION: mysql
-      HUDDLE_SETUP_DB_HOST: db
-      HUDDLE_SETUP_DB_PORT: "3306"
-      HUDDLE_SETUP_DB_DATABASE: huddle
-      HUDDLE_SETUP_DB_USERNAME: huddle
-      HUDDLE_SETUP_DB_PASSWORD: secret
-      HUDDLE_SETUP_DB_HINT: "Docker: use host 'db'"
+      HUDDLE_FRESH_INSTALL: "0"
     depends_on:
       db:
         condition: service_healthy
@@ -27,9 +21,16 @@ services:
       MYSQL_USER: huddle
       MYSQL_PASSWORD: secret
       MYSQL_ROOT_PASSWORD: secret
+    ports:
+      - "3306:3306"
+    volumes:
+      - huddle_db:/var/lib/mysql
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
       timeout: 5s
       retries: 12
       start_period: 15s
+
+volumes:
+  huddle_db:

@@ -49,6 +49,8 @@ class Show extends Component
 
     public int $activeImageIndex = 0;
 
+    public bool $showImageModal = false;
+
     public ?string $due_date = null;
 
     public string $financial_status = '';
@@ -198,6 +200,18 @@ class Show extends Component
         if ($count > 0) {
             $this->activeImageIndex = ($this->activeImageIndex - 1 + $count) % $count;
         }
+    }
+
+    public function openImageModal(): void
+    {
+        if ($this->activeImage) {
+            $this->showImageModal = true;
+        }
+    }
+
+    public function closeImageModal(): void
+    {
+        $this->showImageModal = false;
     }
 
     protected function clampActiveImageIndex(): void
@@ -425,6 +439,13 @@ class Show extends Component
         $this->resetValidation();
     }
 
+    public function updatedPhoto(): void
+    {
+        if ($this->photo) {
+            $this->uploadImage();
+        }
+    }
+
     public function uploadImage(): void
     {
         $this->authorize('uploadImage', $this->project);
@@ -433,16 +454,19 @@ class Show extends Component
             'photo' => ['required', 'image', 'max:5120'],
         ]);
 
-        $path = $this->photo->store('projects/'.$this->project->id, 'local');
+        $disk = 'local';
+        $path = $this->photo->store('projects/'.$this->project->id, $disk);
 
         ProjectImage::create([
             'project_id' => $this->project->id,
             'image_url' => $path,
+            'disk' => $disk,
         ]);
 
+        $this->project->unsetRelation('images');
         $this->reset('photo');
         unset($this->images, $this->activeImage);
-        $this->activeImageIndex = $this->images->count() - 1;
+        $this->activeImageIndex = max(0, $this->images->count() - 1);
     }
 
     public function deleteImage(int $imageId): void

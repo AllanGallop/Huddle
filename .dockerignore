@@ -1,0 +1,13 @@
+huddle/vendor
+huddle/node_modules
+huddle/.env
+huddle/.env.*
+huddle/_.env
+huddle/storage/logs/*
+huddle/storage/framework/cache/*
+huddle/storage/framework/sessions/*
+huddle/storage/framework/views/*
+huddle/bootstrap/cache/*
+huddle/database/*.sqlite
+.git
+.github

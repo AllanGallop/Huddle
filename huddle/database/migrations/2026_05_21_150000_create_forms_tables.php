@@ -59,7 +59,10 @@ return new class extends Migration
             $table->json('value');
             $table->timestamps();
 
-            $table->unique(['form_submission_id', 'form_question_id']);
+            $table->unique(
+                ['form_submission_id', 'form_question_id'],
+                'fsa_submission_question_unique',
+            );
         });
     }
 

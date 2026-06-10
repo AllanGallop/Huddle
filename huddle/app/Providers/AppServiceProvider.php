@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\BrandingService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        app(BrandingService::class)->ensureDefaultAssets();
     }
 
     protected function configureDefaults(): void

@@ -11,6 +11,7 @@ class ProjectImage extends Model
     protected $fillable = [
         'project_id',
         'image_url',
+        'disk',
     ];
 
     public function project(): BelongsTo
@@ -20,11 +21,19 @@ class ProjectImage extends Model
 
     public function storageDisk(): string
     {
+        if ($this->disk && Storage::disk($this->disk)->exists($this->image_url)) {
+            return $this->disk;
+        }
+
         if (Storage::disk('local')->exists($this->image_url)) {
             return 'local';
         }
 
-        return 'public';
+        if (Storage::disk('public')->exists($this->image_url)) {
+            return 'public';
+        }
+
+        return $this->disk ?: 'local';
     }
 
     public function url(): string

@@ -11,6 +11,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\UserFlags;
 use App\Notifications\UserInvitationNotification;
+use App\Services\BrandingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -19,11 +20,12 @@ use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 #[Title('Admin')]
 class Index extends Component
 {
-    use PasswordValidationRules, ProfileValidationRules;
+    use PasswordValidationRules, ProfileValidationRules, WithFileUploads;
 
     public string $activeTab = 'users';
 
@@ -54,6 +56,14 @@ class Index extends Component
     public string $iban = '';
 
     public string $payment_instructions = '';
+
+    public $logoUpload = null;
+
+    public $faviconUpload = null;
+
+    public $bannerLightUpload = null;
+
+    public $bannerDarkUpload = null;
 
     public bool $showTagModal = false;
 
@@ -93,7 +103,7 @@ class Index extends Component
 
     public function setTab(string $tab): void
     {
-        if (in_array($tab, ['users', 'tags', 'membership', 'bank'], true)) {
+        if (in_array($tab, ['users', 'tags', 'membership', 'bank', 'branding'], true)) {
             $this->activeTab = $tab;
         }
     }
@@ -557,6 +567,54 @@ class Index extends Component
         OrganizationSetting::instance()->update($validated);
 
         session()->flash('status', __('Bank details saved.'));
+    }
+
+    public function saveBranding(BrandingService $branding): void
+    {
+        $this->validate([
+            'logoUpload' => ['nullable', 'file', 'mimes:svg,png,jpg,jpeg,webp', 'max:2048'],
+            'faviconUpload' => ['nullable', 'file', 'mimes:svg,png,ico', 'max:512'],
+            'bannerLightUpload' => ['nullable', 'file', 'mimes:svg,png,jpg,jpeg,webp', 'max:2048'],
+            'bannerDarkUpload' => ['nullable', 'file', 'mimes:svg,png,jpg,jpeg,webp', 'max:2048'],
+        ]);
+
+        $settings = OrganizationSetting::instance();
+
+        if ($this->logoUpload) {
+            $branding->storeUpload($settings, $this->logoUpload, 'logo');
+        }
+
+        if ($this->faviconUpload) {
+            $branding->storeUpload($settings, $this->faviconUpload, 'favicon');
+        }
+
+        if ($this->bannerLightUpload) {
+            $branding->storeUpload($settings, $this->bannerLightUpload, 'banner_light');
+        }
+
+        if ($this->bannerDarkUpload) {
+            $branding->storeUpload($settings, $this->bannerDarkUpload, 'banner_dark');
+        }
+
+        $this->reset(['logoUpload', 'faviconUpload', 'bannerLightUpload', 'bannerDarkUpload']);
+        $settings->refresh();
+
+        session()->flash('status', __('Branding saved.'));
+    }
+
+    public function resetBranding(BrandingService $branding): void
+    {
+        $branding->resetBranding(OrganizationSetting::instance());
+
+        $this->reset(['logoUpload', 'faviconUpload', 'bannerLightUpload', 'bannerDarkUpload']);
+
+        session()->flash('status', __('Branding reset to defaults.'));
+    }
+
+    #[Computed]
+    public function organizationSettings(): OrganizationSetting
+    {
+        return OrganizationSetting::instance();
     }
 
     protected function loadBankDetails(): void

@@ -24,6 +24,16 @@ $errors = [];
 $messages = [];
 $appUrl = rtrim((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'], '/');
 
+$setupDbDefaults = [
+    'connection' => getenv('HUDDLE_SETUP_DB_CONNECTION') ?: 'sqlite',
+    'host' => getenv('HUDDLE_SETUP_DB_HOST') ?: '127.0.0.1',
+    'port' => getenv('HUDDLE_SETUP_DB_PORT') ?: '3306',
+    'database' => getenv('HUDDLE_SETUP_DB_DATABASE') ?: 'huddle',
+    'username' => getenv('HUDDLE_SETUP_DB_USERNAME') ?: '',
+    'password' => getenv('HUDDLE_SETUP_DB_PASSWORD') ?: '',
+];
+$setupDbHint = getenv('HUDDLE_SETUP_DB_HINT') ?: null;
+
 if ($installer->isInstalled() && $step !== 'complete') {
     $installer->disableSetupRedirect();
     header('Location: /login');
@@ -212,8 +222,14 @@ function e(string $value): string
         <?php endif; ?>
 
         <?php if ($step === 'database'): ?>
+            <?php
+            $dbConnection = $_POST['db_connection'] ?? $setupDbDefaults['connection'];
+            ?>
             <h2>Database configuration</h2>
             <p class="muted">Application URL detected as <strong><?= e($appUrl) ?></strong>.</p>
+            <?php if ($setupDbHint): ?>
+                <div class="alert success"><?= e($setupDbHint) ?></div>
+            <?php endif; ?>
 
             <form method="post" action="setup.php">
                 <input type="hidden" name="_token" value="<?= e($csrf) ?>">
@@ -222,34 +238,34 @@ function e(string $value): string
                 <div class="field">
                     <label for="db_connection">Database type</label>
                     <select name="db_connection" id="db_connection" onchange="toggleDbFields(this.value)">
-                        <option value="sqlite" <?= ($_POST['db_connection'] ?? 'sqlite') === 'sqlite' ? 'selected' : '' ?>>SQLite (simplest)</option>
-                        <option value="mysql" <?= ($_POST['db_connection'] ?? '') === 'mysql' ? 'selected' : '' ?>>MySQL / MariaDB</option>
+                        <option value="sqlite" <?= $dbConnection === 'sqlite' ? 'selected' : '' ?>>SQLite (simplest)</option>
+                        <option value="mysql" <?= $dbConnection === 'mysql' ? 'selected' : '' ?>>MySQL / MariaDB</option>
                     </select>
                 </div>
 
-                <div id="mysql-fields" class="<?= ($_POST['db_connection'] ?? 'sqlite') === 'mysql' ? '' : 'hidden' ?>">
+                <div id="mysql-fields" class="<?= $dbConnection === 'mysql' ? '' : 'hidden' ?>">
                     <div class="grid">
                         <div class="field">
                             <label for="db_host">Host</label>
-                            <input id="db_host" name="db_host" value="<?= e($_POST['db_host'] ?? '127.0.0.1') ?>">
+                            <input id="db_host" name="db_host" value="<?= e($_POST['db_host'] ?? $setupDbDefaults['host']) ?>">
                         </div>
                         <div class="field">
                             <label for="db_port">Port</label>
-                            <input id="db_port" name="db_port" value="<?= e($_POST['db_port'] ?? '3306') ?>">
+                            <input id="db_port" name="db_port" value="<?= e($_POST['db_port'] ?? $setupDbDefaults['port']) ?>">
                         </div>
                     </div>
                     <div class="field">
                         <label for="db_database">Database name</label>
-                        <input id="db_database" name="db_database" value="<?= e($_POST['db_database'] ?? 'huddle') ?>">
+                        <input id="db_database" name="db_database" value="<?= e($_POST['db_database'] ?? $setupDbDefaults['database']) ?>">
                     </div>
                     <div class="grid">
                         <div class="field">
                             <label for="db_username">Username</label>
-                            <input id="db_username" name="db_username" value="<?= e($_POST['db_username'] ?? '') ?>">
+                            <input id="db_username" name="db_username" value="<?= e($_POST['db_username'] ?? $setupDbDefaults['username']) ?>">
                         </div>
                         <div class="field">
                             <label for="db_password">Password</label>
-                            <input id="db_password" type="password" name="db_password" value="">
+                            <input id="db_password" type="password" name="db_password" value="<?= e($_POST['db_password'] ?? $setupDbDefaults['password']) ?>">
                         </div>
                     </div>
                 </div>
@@ -265,7 +281,7 @@ function e(string $value): string
 
         <?php if ($step === 'admin'): ?>
             <h2>Administrator account</h2>
-            <p class="muted">Create the first administrator account. Any legacy <code>admin@huddle.skullfire.co.uk</code> user will be removed.</p>
+            <p class="muted">Create the first administrator account.</p>
 
             <?php if ($messages !== []): ?>
                 <div class="alert success">

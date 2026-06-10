@@ -27,6 +27,7 @@ class ProjectSecurityTest extends TestCase
         return ProjectImage::create([
             'project_id' => $project->id,
             'image_url' => $path,
+            'disk' => 'local',
         ]);
     }
 
@@ -75,10 +76,36 @@ class ProjectSecurityTest extends TestCase
         Livewire::actingAs($other)
             ->test(ProjectsShow::class, ['project' => $project])
             ->set('photo', UploadedFile::fake()->create('intrusion.jpg', 100, 'image/jpeg'))
-            ->call('uploadImage')
             ->assertForbidden();
 
         $this->assertDatabaseCount('project_images', 0);
+    }
+
+    public function test_project_manager_can_upload_and_recall_image(): void
+    {
+        Storage::fake('local');
+
+        $owner = User::factory()->create();
+        $project = $this->createProjectFor($owner);
+
+        Livewire::actingAs($owner)
+            ->test(ProjectsShow::class, ['project' => $project])
+            ->set('photo', UploadedFile::fake()->create('site-photo.jpg', 100, 'image/jpeg'))
+            ->assertHasNoErrors();
+
+        $image = ProjectImage::query()->first();
+
+        $this->assertNotNull($image);
+        $this->assertSame('local', $image->disk);
+        Storage::disk('local')->assertExists($image->image_url);
+
+        Livewire::actingAs($owner)
+            ->test(ProjectsShow::class, ['project' => $project->fresh()])
+            ->assertSet('activeImageIndex', 0);
+
+        $this->actingAs($owner)
+            ->get(route('projects.image', ['project' => $project, 'projectImage' => $image]))
+            ->assertOk();
     }
 
     public function test_member_created_project_assigns_self_as_leader(): void

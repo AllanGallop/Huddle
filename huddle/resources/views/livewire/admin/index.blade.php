@@ -4,7 +4,7 @@
             <x-material-icon name="admin_panel_settings" class="text-[1.75rem] text-huddle-primary" />
             {{ __('Admin') }}
         </flux:heading>
-        <flux:text class="mt-1">{{ __('Manage team members, tags, membership renewals, and organisation bank details.') }}</flux:text>
+        <flux:text class="mt-1">{{ __('Manage team members, tags, membership renewals, branding, and organisation bank details.') }}</flux:text>
     </div>
 
     @if (session('status'))
@@ -60,6 +60,20 @@
             <span class="inline-flex items-center justify-center gap-2">
                 <x-material-icon name="card_membership" class="text-[1.125rem]" />
                 {{ __('Membership') }}
+            </span>
+        </button>
+        <button
+            type="button"
+            wire:click="setTab('branding')"
+            @class([
+                'flex-1 rounded-md px-4 py-2 text-sm font-medium transition sm:flex-none',
+                'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $activeTab === 'branding',
+                'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $activeTab !== 'branding',
+            ])
+        >
+            <span class="inline-flex items-center justify-center gap-2">
+                <x-material-icon name="palette" class="text-[1.125rem]" />
+                {{ __('Branding') }}
             </span>
         </button>
         <button
@@ -417,6 +431,60 @@
                 @endif
             </div>
         @endif
+    @endif
+
+    @if ($activeTab === 'branding')
+        <div class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900 sm:p-6">
+            <flux:heading size="lg" class="inline-flex items-center gap-2">
+                <x-material-icon name="palette" class="text-[1.375rem] text-huddle-primary" />
+                {{ __('Logo & favicon') }}
+            </flux:heading>
+            <flux:text class="mt-1">{{ __('Customise how Huddle appears in the app, emails, and documents. Leave uploads empty to keep the current assets.') }}</flux:text>
+
+            <div class="mt-6 grid gap-6 lg:grid-cols-2">
+                <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50">
+                    <flux:text class="text-xs font-semibold uppercase tracking-wide text-zinc-500">{{ __('Current logo') }}</flux:text>
+                    <img src="{{ \App\Support\Branding::logoUrl() }}" alt="{{ config('app.name') }}" class="mt-3 h-16 w-16 object-contain">
+                </div>
+                <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50">
+                    <flux:text class="text-xs font-semibold uppercase tracking-wide text-zinc-500">{{ __('Current banner') }}</flux:text>
+                    <img src="{{ \App\Support\Branding::bannerUrl() }}" alt="{{ config('app.name') }}" class="mt-3 h-12 max-w-full object-contain">
+                </div>
+            </div>
+
+            <form wire:submit="saveBranding" class="mt-6 space-y-5">
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <flux:input type="file" wire:model="logoUpload" :label="__('Logo')" accept="image/svg+xml,image/png,image/jpeg,image/webp" />
+                        <flux:text class="mt-1 text-xs text-zinc-500">{{ __('Square icon for the sidebar and app shell. SVG or PNG recommended.') }}</flux:text>
+                    </div>
+                    <div>
+                        <flux:input type="file" wire:model="faviconUpload" :label="__('Favicon')" accept="image/svg+xml,image/png,image/x-icon" />
+                        <flux:text class="mt-1 text-xs text-zinc-500">{{ __('Browser tab icon. Falls back to the logo if not set.') }}</flux:text>
+                    </div>
+                    <div>
+                        <flux:input type="file" wire:model="bannerLightUpload" :label="__('Banner (light backgrounds)')" accept="image/svg+xml,image/png,image/jpeg,image/webp" />
+                        <flux:text class="mt-1 text-xs text-zinc-500">{{ __('Used on auth pages, emails, and PDFs.') }}</flux:text>
+                    </div>
+                    <div>
+                        <flux:input type="file" wire:model="bannerDarkUpload" :label="__('Banner (dark backgrounds)')" accept="image/svg+xml,image/png,image/jpeg,image/webp" />
+                        <flux:text class="mt-1 text-xs text-zinc-500">{{ __('Used where the background is dark.') }}</flux:text>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                    <flux:button type="submit" variant="primary">
+                        <span class="inline-flex items-center gap-2">
+                            <x-material-icon name="save" class="text-[1.25rem]" />
+                            {{ __('Save branding') }}
+                        </span>
+                    </flux:button>
+                    <flux:button type="button" variant="ghost" wire:click="resetBranding" wire:confirm="{{ __('Remove custom branding and use the default Huddle logo?') }}">
+                        {{ __('Reset to defaults') }}
+                    </flux:button>
+                </div>
+            </form>
+        </div>
     @endif
 
     @if ($activeTab === 'bank')

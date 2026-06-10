@@ -1,0 +1,113 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_ftp:
+        description: Upload build to FTP after packaging
+        type: boolean
+        default: false
+  push:
+    tags:
+      - v*
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: Testing
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          tools: composer:v2
+          extensions: mbstring, xml, ctype, json, fileinfo, curl, gd, intl, pdo, pdo_mysql, pdo_sqlite
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: huddle/package-lock.json
+
+      - name: Configure Flux
+        working-directory: huddle
+        run: composer config http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
+
+      - name: Install PHP dependencies
+        working-directory: huddle
+        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Install Node dependencies
+        working-directory: huddle
+        run: npm ci
+
+      - name: Build frontend assets
+        working-directory: huddle
+        run: npm run build
+
+      - name: Create release package
+        run: sh scripts/build-release.sh "${{ github.ref_name }}"
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: huddle-release
+          path: build/output/*
+          retention-days: 90
+
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/output/*
+          generate_release_notes: true
+
+  deploy-ftp:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_ftp == 'true'
+    runs-on: ubuntu-latest
+    environment: Production
+    steps:
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: huddle-release
+          path: release
+
+      - name: Extract release package
+        run: |
+          cd release
+          unzip -q huddle-*.zip
+          echo "PACKAGE_DIR=$(ls -d huddle-* | head -1)" >> "$GITHUB_ENV"
+
+      - name: Deploy to FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: release/${{ env.PACKAGE_DIR }}/
+          server-dir: ${{ vars.FTP_SERVER_DIR || '/' }}
+          exclude: |
+            **/.git*
+            **/.github/**
+            **/node_modules/**
+            **/tests/**
+            **/.env
+            **/.env.*
+            **/database/*.sqlite
+            **/.phpunit.*
+            **/storage/logs/**
+            **/storage/framework/cache/data/**
+            **/storage/framework/sessions/**
+            **/storage/framework/views/**
+            **/bootstrap/cache/*.php
+            **/public/hot
+            **/auth.json
