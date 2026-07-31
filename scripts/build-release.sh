@@ -55,6 +55,11 @@ if [ -f "$PACKAGE_DIR/public/.htaccess.setup" ]; then
     cp "$PACKAGE_DIR/public/.htaccess.setup" "$PACKAGE_DIR/public/.htaccess"
 fi
 
+mkdir -p "$PACKAGE_DIR/scripts"
+cp "$ROOT/scripts/migrate.sh" "$PACKAGE_DIR/scripts/migrate.sh"
+cp "$ROOT/scripts/migrate.ps1" "$PACKAGE_DIR/scripts/migrate.ps1"
+chmod +x "$PACKAGE_DIR/scripts/migrate.sh"
+
 cat > "$PACKAGE_DIR/DEPLOY.txt" <<'EOF'
 Huddle release package
 ======================
@@ -66,6 +71,10 @@ Upload the contents of this folder to your server (FTP, SFTP, or file manager).
 3. Visit https://your-domain.example/setup.php to run the installer.
 4. After installation, add a cron job: * * * * * php /path/to/artisan schedule:run
 5. Run a queue worker for email and background jobs: php artisan queue:work
+
+Updating an existing install: upload new files (keep .env and storage/), then run:
+  ./scripts/migrate.sh
+  # or: .\scripts\migrate.ps1
 
 Full instructions: hosting-guide.md in the repository .github/docs/ folder.
 EOF

@@ -73,6 +73,8 @@ Huddle can be deployed on any server with PHP 8.2+, a web server (Apache recomme
 
 See the [hosting guide](.github/docs/hosting-guide.md).
 
+**Updating a hosted install:** download the latest release with `./scripts/download-latest-release.sh` (or `.\scripts\download-latest-release.ps1`), upload via FTP without overwriting `.env`/`storage/`, then run `./scripts/migrate.sh` on the server. Details are in the [deployment guide](.github/docs/deployment.md).
+
 ## Local development (without Docker)
 
 For active development on the host machine:

@@ -4,7 +4,7 @@
             <x-material-icon name="admin_panel_settings" class="text-[1.75rem] text-huddle-primary" />
             {{ __('Admin') }}
         </flux:heading>
-        <flux:text class="mt-1">{{ __('Manage team members, tags, membership renewals, branding, and organisation bank details.') }}</flux:text>
+        <flux:text class="mt-1">{{ __('Manage team members, tags, membership renewals, branding, organisation bank details, and application updates.') }}</flux:text>
     </div>
 
     @if (session('status'))
@@ -14,6 +14,12 @@
     @endif
 
     @error('user')
+        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
+            {{ $message }}
+        </div>
+    @enderror
+
+    @error('update')
         <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
             {{ $message }}
         </div>
@@ -88,6 +94,20 @@
             <span class="inline-flex items-center justify-center gap-2">
                 <x-material-icon name="account_balance" class="text-[1.125rem]" />
                 {{ __('Bank details') }}
+            </span>
+        </button>
+        <button
+            type="button"
+            wire:click="setTab('updates')"
+            @class([
+                'flex-1 rounded-md px-4 py-2 text-sm font-medium transition sm:flex-none',
+                'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $activeTab === 'updates',
+                'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $activeTab !== 'updates',
+            ])
+        >
+            <span class="inline-flex items-center justify-center gap-2">
+                <x-material-icon name="system_update_alt" class="text-[1.125rem]" />
+                {{ __('Updates') }}
             </span>
         </button>
     </nav>
@@ -518,6 +538,115 @@
                     </span>
                 </flux:button>
             </form>
+        </div>
+    @endif
+
+    @if ($activeTab === 'updates')
+        <div class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900 sm:p-6">
+            <div>
+                <flux:heading size="lg" class="inline-flex items-center gap-2">
+                    <x-material-icon name="system_update_alt" class="text-[1.5rem] text-huddle-primary" />
+                    {{ __('Application updates') }}
+                </flux:heading>
+                <flux:text class="mt-1 text-sm">
+                    {{ __('Check GitHub for a newer release package, then apply database migrations after you upload the new files.') }}
+                </flux:text>
+            </div>
+
+            <dl class="mt-6 grid gap-4 sm:grid-cols-2">
+                <div class="rounded-lg border border-zinc-200 px-4 py-3 dark:border-zinc-700">
+                    <dt class="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Installed version') }}</dt>
+                    <dd class="mt-1 text-sm font-medium text-zinc-900 dark:text-white">
+                        {{ $installedVersion ?? __('Unknown (no VERSION file)') }}
+                    </dd>
+                </div>
+                <div class="rounded-lg border border-zinc-200 px-4 py-3 dark:border-zinc-700">
+                    <dt class="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Latest release') }}</dt>
+                    <dd class="mt-1 text-sm font-medium text-zinc-900 dark:text-white">
+                        @if ($latestReleaseTag)
+                            {{ $latestReleaseTag }}
+                            @if ($updateAvailable)
+                                <span class="ml-2 text-xs font-semibold text-amber-700 dark:text-amber-300">{{ __('Update available') }}</span>
+                            @endif
+                        @else
+                            {{ __('Not checked yet') }}
+                        @endif
+                    </dd>
+                </div>
+            </dl>
+
+            @if ($updateCheckMessage)
+                <p class="mt-4 text-sm text-zinc-600 dark:text-zinc-400">{{ $updateCheckMessage }}</p>
+            @endif
+
+            <div class="mt-6 flex flex-wrap gap-3">
+                <flux:button type="button" variant="filled" wire:click="checkForUpdates" wire:loading.attr="disabled">
+                    <span class="inline-flex items-center gap-2" wire:loading.remove wire:target="checkForUpdates">
+                        <x-material-icon name="travel_explore" class="text-[1.25rem]" />
+                        {{ __('Check for updates') }}
+                    </span>
+                    <span class="inline-flex items-center gap-2" wire:loading wire:target="checkForUpdates">
+                        {{ __('Checking…') }}
+                    </span>
+                </flux:button>
+
+                @if ($latestReleaseZipUrl)
+                    <flux:button
+                        type="button"
+                        variant="ghost"
+                        :href="$latestReleaseZipUrl"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <span class="inline-flex items-center gap-2">
+                            <x-material-icon name="download" class="text-[1.25rem]" />
+                            {{ __('Download release zip') }}
+                        </span>
+                    </flux:button>
+                @elseif ($latestReleaseUrl)
+                    <flux:button
+                        type="button"
+                        variant="ghost"
+                        :href="$latestReleaseUrl"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <span class="inline-flex items-center gap-2">
+                            <x-material-icon name="open_in_new" class="text-[1.25rem]" />
+                            {{ __('View on GitHub') }}
+                        </span>
+                    </flux:button>
+                @endif
+            </div>
+
+            <div class="mt-8 border-t border-zinc-200 pt-6 dark:border-zinc-700">
+                <flux:heading size="base">{{ __('Apply database update') }}</flux:heading>
+                <flux:text class="mt-1 text-sm">
+                    {{ __('After uploading a new release (keep .env and storage/), run migrations and seeders here. Restart queue workers afterwards if you use them.') }}
+                </flux:text>
+
+                <div class="mt-4">
+                    <flux:button
+                        type="button"
+                        variant="primary"
+                        wire:click="applyDatabaseUpdate"
+                        wire:confirm="{{ __('Run database migrations and seeders now?') }}"
+                        wire:loading.attr="disabled"
+                    >
+                        <span class="inline-flex items-center gap-2" wire:loading.remove wire:target="applyDatabaseUpdate">
+                            <x-material-icon name="database" class="text-[1.25rem]" />
+                            {{ __('Update database') }}
+                        </span>
+                        <span class="inline-flex items-center gap-2" wire:loading wire:target="applyDatabaseUpdate">
+                            {{ __('Updating…') }}
+                        </span>
+                    </flux:button>
+                </div>
+
+                @if (count($updateOutput) > 0)
+                    <pre class="mt-4 overflow-x-auto rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-xs text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">{{ implode("\n", $updateOutput) }}</pre>
+                @endif
+            </div>
         </div>
     @endif
 

@@ -226,12 +226,35 @@ php artisan storage:link
 
 ## Updating an existing installation
 
+### Pre-built release package (recommended for shared hosts)
+
+On your local machine, download the latest GitHub Release zip:
+
+```bash
+./scripts/download-latest-release.sh
+# Windows: .\scripts\download-latest-release.ps1
+```
+
+Extract and upload the contents via FTP/SFTP. Keep your existing `.env`, `storage/`, and database files.
+
+On the server (SSH), from the application root:
+
+```bash
+./scripts/migrate.sh
+# Windows: .\scripts\migrate.ps1
+```
+
+This runs `migrate --force`, `db:seed --force`, and rebuilds config/route/view caches.
+
+### Source-based install
+
 ```bash
 cd /var/www/huddle/huddle
-git pull                          # or deploy new files
+git pull
 composer install --no-dev --optimize-autoloader
 npm ci && npm run build
 php artisan migrate --force
+php artisan db:seed --force
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache

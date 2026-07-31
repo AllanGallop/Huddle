@@ -11,6 +11,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\UserFlags;
 use App\Notifications\UserInvitationNotification;
+use App\Services\ApplicationUpdateService;
 use App\Services\BrandingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -96,14 +97,30 @@ class Index extends Component
 
     public ?int $membership_assignment_renewal_id = null;
 
-    public function mount(): void
+    public ?string $installedVersion = null;
+
+    public ?string $latestReleaseTag = null;
+
+    public ?string $latestReleaseUrl = null;
+
+    public ?string $latestReleaseZipUrl = null;
+
+    public bool $updateAvailable = false;
+
+    public ?string $updateCheckMessage = null;
+
+    /** @var list<string> */
+    public array $updateOutput = [];
+
+    public function mount(ApplicationUpdateService $updates): void
     {
         $this->loadBankDetails();
+        $this->installedVersion = $updates->installedVersion();
     }
 
     public function setTab(string $tab): void
     {
-        if (in_array($tab, ['users', 'tags', 'membership', 'bank', 'branding'], true)) {
+        if (in_array($tab, ['users', 'tags', 'membership', 'bank', 'branding', 'updates'], true)) {
             $this->activeTab = $tab;
         }
     }
@@ -609,6 +626,43 @@ class Index extends Component
         $this->reset(['logoUpload', 'faviconUpload', 'bannerLightUpload', 'bannerDarkUpload']);
 
         session()->flash('status', __('Branding reset to defaults.'));
+    }
+
+    public function checkForUpdates(ApplicationUpdateService $updates): void
+    {
+        abort_unless(Auth::user()?->isAdmin(), 403);
+
+        $result = $updates->checkLatestRelease();
+
+        $this->installedVersion = $updates->installedVersion();
+        $this->latestReleaseTag = $result['tag'];
+        $this->latestReleaseUrl = $result['html_url'];
+        $this->latestReleaseZipUrl = $result['zip_url'];
+        $this->updateAvailable = $result['update_available'];
+        $this->updateCheckMessage = $result['message'];
+
+        if ($result['ok'] && $result['update_available']) {
+            session()->flash('status', __('A newer release (:tag) is available.', [
+                'tag' => $result['tag'],
+            ]));
+        } elseif ($result['ok']) {
+            session()->flash('status', __('You are on the latest release.'));
+        }
+    }
+
+    public function applyDatabaseUpdate(ApplicationUpdateService $updates): void
+    {
+        abort_unless(Auth::user()?->isAdmin(), 403);
+
+        $result = $updates->applyDatabaseUpdates();
+        $this->updateOutput = $result['output'];
+        $this->installedVersion = $updates->installedVersion();
+
+        if ($result['ok']) {
+            session()->flash('status', $result['message']);
+        } else {
+            $this->addError('update', $result['message']);
+        }
     }
 
     #[Computed]

@@ -39,3 +39,13 @@ Store organisation payment information used on [project](projects.md) quotes and
 
 - Account name, bank name, sort code, account number, IBAN
 - Free-text payment instructions
+
+## Updates
+
+Admins can check for newer GitHub release packages and apply database updates from the web UI:
+
+- **Check for updates** — compares the installed `VERSION` file with the latest GitHub Release
+- **Download release zip** — opens the latest package when a newer release is available
+- **Update database** — runs migrations and seeders after new application files have been uploaded (preserves `.env` and `storage/`)
+
+File uploads still use FTP/SFTP (or the release scripts). See the [deployment guide](../deployment.md).

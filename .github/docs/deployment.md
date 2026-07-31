@@ -10,6 +10,7 @@ The release package contains the `huddle/` application with:
 - `public/build/` — compiled CSS and JavaScript from Vite
 - `public/.htaccess` — setup wizard redirect (from `.htaccess.setup`)
 - Empty `storage/` and `bootstrap/cache/` directories for server writes
+- `scripts/migrate.sh` / `scripts/migrate.ps1` — post-upload migrations and seeders
 - `DEPLOY.txt` — quick post-upload checklist
 
 Excluded: `node_modules`, tests, `.env`, SQLite databases, log/cache/session files, and development tooling.
@@ -107,12 +108,31 @@ Output is written to `build/output/`.
 ## Updating an existing installation
 
 1. Back up `.env` and the database
-2. Build or download a new release package
-3. Upload changed files via FTP (or run automated FTP deploy to a staging path first)
-4. On the server:
+2. Download the latest release package:
+
+```bash
+# Linux / macOS
+./scripts/download-latest-release.sh
+
+# Windows (PowerShell)
+.\scripts\download-latest-release.ps1
+```
+
+The zip is saved under `build/download/`. You can also build locally or download from the GitHub Release page.
+
+3. Extract and upload changed files via FTP (or run automated FTP deploy to a staging path first). **Do not overwrite** `.env`, `storage/`, or existing `database/*.sqlite` files.
+4. On the server, apply database updates either from **Admin → Updates → Update database**, or via CLI:
+
+```bash
+./scripts/migrate.sh
+# Windows: .\scripts\migrate.ps1
+```
+
+Or manually:
 
 ```bash
 php artisan migrate --force
+php artisan db:seed --force
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
