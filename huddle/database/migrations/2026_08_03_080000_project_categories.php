@@ -21,7 +21,7 @@ return new class extends Migration
             $table->foreignId('project_category_id')->constrained('project_categories')->cascadeOnDelete();
             $table->timestamps();
 
-            $table->unique(['project_id', 'project_category_id']);
+            $table->unique(['project_id', 'project_category_id'], 'pca_project_category_unique');
         });
     }
 
