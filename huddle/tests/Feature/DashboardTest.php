@@ -3,8 +3,11 @@
 namespace Tests\Feature;
 
 use App\Livewire\Dashboard;
+use App\Models\Event;
+use App\Models\EventVolunteer;
 use App\Models\Project;
 use App\Models\ProjectCategory;
+use App\Models\ProjectComment;
 use App\Models\ProjectVolunteer;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,10 +30,10 @@ class DashboardTest extends TestCase
         $this->get('/dashboard')->assertOk();
     }
 
-    public function test_dashboard_shows_personalised_project_updates_and_categories(): void
+    public function test_dashboard_shows_activity_updates_categories_and_personal_events(): void
     {
         $user = User::factory()->create(['name' => 'Alex Gallop']);
-        $other = User::factory()->create();
+        $other = User::factory()->create(['name' => 'Sam Other']);
         $woodshop = ProjectCategory::create(['name' => 'Woodshop']);
         $health = ProjectCategory::create(['name' => 'H&S']);
 
@@ -43,7 +46,12 @@ class DashboardTest extends TestCase
             'project_status' => 'in-progress',
         ]);
         $led->categories()->sync([$woodshop->id]);
-        $led->forceFill(['updated_at' => now()])->save();
+
+        ProjectComment::create([
+            'project_id' => $led->id,
+            'user_id' => $other->id,
+            'comment' => 'Looking good',
+        ]);
 
         $volunteered = Project::create([
             'name' => 'Safety signage',
@@ -58,9 +66,8 @@ class DashboardTest extends TestCase
             'project_id' => $volunteered->id,
             'user_id' => $user->id,
         ]);
-        $volunteered->forceFill(['updated_at' => now()])->save();
 
-        $unrelated = Project::create([
+        Project::create([
             'name' => 'Someone else project',
             'description' => 'Not mine',
             'created_by' => $other->id,
@@ -68,17 +75,48 @@ class DashboardTest extends TestCase
             'volunteer_required' => false,
             'project_status' => 'in-progress',
         ]);
-        $unrelated->forceFill(['updated_at' => now()])->save();
+
+        $myEvent = Event::create([
+            'name' => 'Open day shift',
+            'description' => 'Help on the door',
+            'location' => 'Main shed',
+            'event_type' => 'public',
+            'event_status' => 'published',
+            'start_time' => now()->addDays(2),
+            'end_time' => now()->addDays(2)->addHours(3),
+            'created_by' => $other->id,
+            'volunteer_required' => true,
+        ]);
+        EventVolunteer::create([
+            'event_id' => $myEvent->id,
+            'user_id' => $user->id,
+        ]);
+
+        $otherEvent = Event::create([
+            'name' => 'Committee meeting',
+            'description' => 'Monthly meeting',
+            'location' => 'Office',
+            'event_type' => 'public',
+            'event_status' => 'published',
+            'start_time' => now()->addDay(),
+            'end_time' => now()->addDay()->addHours(2),
+            'created_by' => $other->id,
+            'volunteer_required' => false,
+        ]);
 
         Livewire::actingAs($user)
             ->test(Dashboard::class)
             ->assertSee(__('Welcome back, :name', ['name' => 'Alex']))
             ->assertSee('Workshop benches')
+            ->assertSee(__(':name commented', ['name' => 'Sam Other']))
             ->assertSee('Safety signage')
+            ->assertSee(__('You signed up as a volunteer'))
             ->assertDontSee('Someone else project')
             ->assertSee('Woodshop')
             ->assertSee('H&S')
             ->assertSee(__('Leading'))
-            ->assertSee(__('Volunteering'));
+            ->assertSee('Open day shift')
+            ->assertSee('Committee meeting')
+            ->assertSeeInOrder(['Open day shift', 'Committee meeting']);
     }
 }

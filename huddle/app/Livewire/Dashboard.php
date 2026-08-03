@@ -5,6 +5,9 @@ namespace App\Livewire;
 use App\Models\Event;
 use App\Models\Project;
 use App\Models\ProjectCategory;
+use App\Models\ProjectComment;
+use App\Models\ProjectImage;
+use App\Models\ProjectVolunteer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +20,9 @@ class Dashboard extends Component
 {
     public const UPDATE_LOOKBACK_DAYS = 14;
 
-    public const UPDATES_LIMIT = 8;
+    public const UPDATES_LIMIT = 10;
+
+    public const EVENTS_LIMIT = 5;
 
     #[Computed]
     public function firstName(): string
@@ -37,9 +42,7 @@ class Dashboard extends Component
                 ->whereHas('volunteers', fn (Builder $q) => $q->where('user_id', Auth::id()))
                 ->whereNotIn('project_status', ['cancelled', 'archived'])
                 ->count(),
-            'updated' => (clone $mine)
-                ->where('updated_at', '>=', now()->subDays(self::UPDATE_LOOKBACK_DAYS))
-                ->count(),
+            'updated' => $this->projectUpdates->count(),
         ];
     }
 
@@ -60,25 +63,127 @@ class Dashboard extends Component
     }
 
     /**
-     * Recently updated projects the user leads, created, or volunteers on.
+     * Activity feed for projects the user leads, created, or volunteers on.
      *
-     * @return Collection<int, Project>
+     * @return Collection<int, array{project: Project, type: string, summary: string, at: \Illuminate\Support\Carbon}>
      */
     #[Computed]
     public function projectUpdates(): Collection
     {
-        return $this->myProjectsQuery()
+        $since = now()->subDays(self::UPDATE_LOOKBACK_DAYS);
+        $projectIds = $this->myProjectsQuery()->pluck('id');
+
+        if ($projectIds->isEmpty()) {
+            return collect();
+        }
+
+        $projects = Project::query()
             ->with(['leader', 'categories'])
-            ->where('updated_at', '>=', now()->subDays(self::UPDATE_LOOKBACK_DAYS))
-            ->orderByDesc('updated_at')
-            ->limit(self::UPDATES_LIMIT)
+            ->whereIn('id', $projectIds)
+            ->get()
+            ->keyBy('id');
+
+        $activities = collect();
+
+        $comments = ProjectComment::query()
+            ->with('user')
+            ->whereIn('project_id', $projectIds)
+            ->where('created_at', '>=', $since)
+            ->latest()
+            ->limit(40)
+            ->get();
+
+        foreach ($comments as $comment) {
+            $project = $projects->get($comment->project_id);
+            if (! $project) {
+                continue;
+            }
+
+            $actor = $comment->user?->name ?? __('Someone');
+            $activities->push([
+                'project' => $project,
+                'type' => 'comment',
+                'summary' => __(':name commented', ['name' => $actor]),
+                'at' => $comment->created_at,
+            ]);
+        }
+
+        $volunteers = ProjectVolunteer::query()
+            ->with('user')
+            ->whereIn('project_id', $projectIds)
+            ->where('created_at', '>=', $since)
+            ->latest()
+            ->limit(40)
+            ->get();
+
+        foreach ($volunteers as $volunteer) {
+            $project = $projects->get($volunteer->project_id);
+            if (! $project) {
+                continue;
+            }
+
+            $actor = $volunteer->user?->name ?? __('Someone');
+            $summary = (int) $volunteer->user_id === Auth::id()
+                ? __('You signed up as a volunteer')
+                : __(':name signed up as a volunteer', ['name' => $actor]);
+
+            $activities->push([
+                'project' => $project,
+                'type' => 'volunteer',
+                'summary' => $summary,
+                'at' => $volunteer->created_at,
+            ]);
+        }
+
+        $images = ProjectImage::query()
+            ->whereIn('project_id', $projectIds)
+            ->where('created_at', '>=', $since)
+            ->latest()
+            ->limit(40)
+            ->get();
+
+        foreach ($images as $image) {
+            $project = $projects->get($image->project_id);
+            if (! $project) {
+                continue;
+            }
+
+            $activities->push([
+                'project' => $project,
+                'type' => 'image',
+                'summary' => __('New photo added'),
+                'at' => $image->created_at,
+            ]);
+        }
+
+        return $activities
+            ->sortByDesc(fn (array $item) => $item['at']->timestamp)
+            ->values()
+            ->take(self::UPDATES_LIMIT);
+    }
+
+    /**
+     * @return Collection<int, Project>
+     */
+    #[Computed]
+    public function volunteerNeededProjects(): Collection
+    {
+        if ($this->projectsByCategory->isNotEmpty() || $this->projectUpdates->isNotEmpty()) {
+            return collect();
+        }
+
+        return Project::query()
+            ->with(['leader', 'categories'])
+            ->where('volunteer_required', true)
+            ->whereNotIn('project_status', ['draft', 'cancelled', 'archived', 'completed'])
+            ->whereDoesntHave('volunteers', fn (Builder $q) => $q->where('user_id', Auth::id()))
+            ->latest()
+            ->limit(4)
             ->get();
     }
 
     /**
      * Active projects for the user, grouped by category name.
-     * Projects with multiple categories appear in each group.
-     * Uncategorized projects are under a dedicated key.
      *
      * @return Collection<string, Collection<int, Project>>
      */
@@ -122,17 +227,32 @@ class Dashboard extends Component
         return $grouped;
     }
 
+    /**
+     * Upcoming events with ones the user volunteers on listed first.
+     *
+     * @return Collection<int, Event>
+     */
     #[Computed]
-    public function upcomingEvents()
+    public function upcomingEvents(): Collection
     {
-        return Event::query()
+        $userId = Auth::id();
+
+        $events = Event::query()
             ->visibleTo(Auth::user())
-            ->with('creator')
+            ->with(['creator', 'volunteers'])
             ->where('event_status', 'published')
             ->where('end_time', '>=', now())
             ->orderBy('start_time')
-            ->limit(4)
+            ->limit(20)
             ->get();
+
+        return $events
+            ->sortBy([
+                fn (Event $event) => $event->volunteers->contains('user_id', $userId) ? 0 : 1,
+                fn (Event $event) => $event->start_time->timestamp,
+            ])
+            ->values()
+            ->take(self::EVENTS_LIMIT);
     }
 
     public function involvementLabel(Project $project): string
@@ -148,6 +268,11 @@ class Dashboard extends Component
         }
 
         return __('Volunteering');
+    }
+
+    public function isVolunteeringOnEvent(Event $event): bool
+    {
+        return $event->volunteers->contains('user_id', Auth::id());
     }
 
     protected function myProjectsQuery(): Builder

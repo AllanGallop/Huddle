@@ -115,6 +115,15 @@
                     </div>
                 @endforeach
             </div>
+
+            <div class="mt-6 flex flex-wrap gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-700">
+                <flux:button type="button" variant="ghost" size="sm" wire:click="addQuestion('yes_no')">
+                    {{ __('Add yes/no') }}
+                </flux:button>
+                <flux:button type="button" variant="ghost" size="sm" wire:click="addQuestion('multiple_choice')">
+                    {{ __('Add multiple choice') }}
+                </flux:button>
+            </div>
         </div>
 
         <div class="flex flex-wrap justify-end gap-2">

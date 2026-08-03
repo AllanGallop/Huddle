@@ -35,9 +35,9 @@
             <p class="mt-3 text-3xl font-semibold text-huddle-accent">{{ $this->projectStats['volunteering'] }}</p>
         </div>
         <div class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-            <flux:text>{{ __('Updated recently') }}</flux:text>
+            <flux:text>{{ __('Recent activity') }}</flux:text>
             <p class="mt-3 text-3xl font-semibold text-huddle-comp">{{ $this->projectStats['updated'] }}</p>
-            <flux:text class="mt-1 text-xs">{{ __('Last :days days', ['days' => \App\Livewire\Dashboard::UPDATE_LOOKBACK_DAYS]) }}</flux:text>
+            <flux:text class="mt-1 text-xs">{{ __('Comments, volunteers, and photos') }}</flux:text>
         </div>
     </div>
 
@@ -49,34 +49,52 @@
             </div>
             @if ($this->projectUpdates->isEmpty())
                 <div class="flex flex-col items-center gap-2 px-5 py-8 text-center">
-                    <flux:text>{{ __('No recent updates on your projects.') }}</flux:text>
-                    <flux:button variant="primary" size="sm" :href="route('projects.index')" wire:navigate>{{ __('Browse projects') }}</flux:button>
+                    <flux:text>{{ __('No recent activity on your projects.') }}</flux:text>
+                    @if ($this->volunteerNeededProjects->isNotEmpty())
+                        <flux:text class="text-sm">{{ __('These projects need volunteers:') }}</flux:text>
+                        <div class="mt-2 w-full space-y-2 text-start">
+                            @foreach ($this->volunteerNeededProjects as $project)
+                                <a
+                                    href="{{ route('projects.show', $project) }}"
+                                    wire:navigate
+                                    class="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 px-3 py-2 transition hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50"
+                                    wire:key="need-vol-{{ $project->id }}"
+                                >
+                                    <span class="truncate text-sm font-medium text-zinc-900 dark:text-white">{{ $project->name }}</span>
+                                    <x-project-status-badge :status="$project->project_status" />
+                                </a>
+                            @endforeach
+                        </div>
+                    @else
+                        <flux:button variant="primary" size="sm" :href="route('projects.index')" wire:navigate>{{ __('Browse projects') }}</flux:button>
+                    @endif
                 </div>
             @else
                 <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
-                    @foreach ($this->projectUpdates as $project)
+                    @foreach ($this->projectUpdates as $activity)
                         <a
-                            href="{{ route('projects.show', $project) }}"
+                            href="{{ route('projects.show', $activity['project']) }}"
                             wire:navigate
                             class="flex items-start justify-between gap-3 px-5 py-4 transition hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-                            wire:key="update-project-{{ $project->id }}"
+                            wire:key="update-{{ $activity['type'] }}-{{ $activity['project']->id }}-{{ $activity['at']->timestamp }}"
                         >
                             <div class="min-w-0">
-                                <p class="truncate font-medium text-zinc-900 dark:text-white">{{ $project->name }}</p>
+                                <p class="truncate font-medium text-zinc-900 dark:text-white">{{ $activity['project']->name }}</p>
+                                <p class="mt-0.5 text-sm text-zinc-600 dark:text-zinc-300">{{ $activity['summary'] }}</p>
                                 <p class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500">
-                                    <span>{{ $this->involvementLabel($project) }}</span>
+                                    <span>{{ $this->involvementLabel($activity['project']) }}</span>
                                     <span aria-hidden="true">·</span>
-                                    <span>{{ __('Updated') }} {{ $project->updated_at->diffForHumans() }}</span>
+                                    <span>{{ $activity['at']->diffForHumans() }}</span>
                                 </p>
-                                @if ($project->categories->isNotEmpty())
+                                @if ($activity['project']->categories->isNotEmpty())
                                     <div class="mt-1.5 flex flex-wrap gap-1">
-                                        @foreach ($project->categories as $category)
-                                            <x-user-flag-badge :name="$category->name" wire:key="update-{{ $project->id }}-cat-{{ $category->id }}" />
+                                        @foreach ($activity['project']->categories as $category)
+                                            <x-user-flag-badge :name="$category->name" wire:key="update-{{ $activity['project']->id }}-cat-{{ $category->id }}" />
                                         @endforeach
                                     </div>
                                 @endif
                             </div>
-                            <x-project-status-badge :status="$project->project_status" />
+                            <x-project-status-badge :status="$activity['project']->project_status" />
                         </a>
                     @endforeach
                 </div>
@@ -104,7 +122,14 @@
                 <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
                     @foreach ($this->upcomingEvents as $event)
                         <a href="{{ route('events.show', $event) }}" wire:navigate class="block px-5 py-4 transition hover:bg-zinc-50 dark:hover:bg-zinc-800/50" wire:key="upcoming-event-{{ $event->id }}">
-                            <p class="font-medium text-zinc-900 dark:text-white">{{ $event->name }}</p>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="font-medium text-zinc-900 dark:text-white">{{ $event->name }}</p>
+                                @if ($this->isVolunteeringOnEvent($event))
+                                    <span class="inline-flex items-center rounded-full bg-huddle-accent/15 px-2 py-0.5 text-xs font-medium text-huddle-accent">
+                                        {{ __('Volunteering') }}
+                                    </span>
+                                @endif
+                            </div>
                             <p class="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-zinc-500">
                                 <span class="inline-flex items-center gap-1">
                                     <x-material-icon name="schedule" class="inline !text-[0.875rem]" />
