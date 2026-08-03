@@ -9,6 +9,7 @@ Central management for organisation configuration. Available to users with the *
 ## Users
 
 - Invite users by email (sends a password-reset link)
+- Resend invitation emails when the previous link has expired (mail icon on each user row)
 - Add users directly with role assignment
 - Edit names, emails, roles, and tags
 - Remove users (the last admin cannot be deleted)
@@ -19,6 +20,13 @@ Central management for organisation configuration. Available to users with the *
 - Assign tags to users from the user edit modal
 
 Tags control access across the platform — see [Roles and permissions](roles-and-permissions.md).
+
+## Categories
+
+- Create and edit project categories (Woodshop, H&S, Metalwork, etc.)
+- Assign one or more categories when creating or editing a [project](projects.md)
+
+Default categories are seeded on install; admins can add or remove them here.
 
 ## Membership
 

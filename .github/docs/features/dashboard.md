@@ -1,25 +1,34 @@
 # Dashboard
 
-The dashboard provides an at-a-glance summary of community activity.
+A personalised home for each member after login.
 
 [← Back to features](README.md)
 
-## Summary cards
+## Greeting and summary
 
-**Projects**
+The dashboard greets the signed-in member and shows counts for:
 
-- Total projects
-- In progress
-- Completed
-- Projects needing volunteers
+- Active projects they lead, created, or volunteer on
+- Projects they lead
+- Projects they volunteer on
+- Recent activity items (comments, volunteer sign-ups, new photos)
 
-**Events**
+## Your project updates
 
-- Total events
-- Upcoming
-- Ongoing
-- Events needing volunteers
+An activity feed for projects you are involved in (last 14 days):
 
-## Quick access
+- New comments
+- Volunteer sign-ups
+- New photos
 
-Recent projects and upcoming events are listed with links to each detail page. Header actions let you jump to [Events](events.md) or create a new [project](projects.md).
+Each item links to the project and shows your role (Leading / Created / Volunteering).
+
+If you have no activity and no active projects, the empty state suggests projects that need volunteers.
+
+## Upcoming events
+
+Published upcoming events, with ones you are volunteering on listed first and labelled.
+
+## Your projects by category
+
+Active involvement grouped by [project category](projects.md) (Woodshop, H&S, etc.), plus an Uncategorized group when needed. Projects with multiple categories appear under each matching category.

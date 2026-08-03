@@ -267,6 +267,7 @@ Restart queue workers after deploying code changes.
 | Problem | Solution |
 |---------|----------|
 | 500 error, blank page | Check `storage/logs/laravel.log`; verify permissions on `storage/` and `bootstrap/cache/` |
+| Pretty URLs 500 but `/index.php/login` works | Ionos rewrite issue — ensure `public/.htaccess` uses the PATH_INFO rule (`index.php%{REQUEST_URI}`) from this repo; remove any `Options` directives if the host forbids them |
 | Setup wizard loops | Delete `.env`, restore `.htaccess.setup`, clear browser cookies |
 | CSS/JS missing | Run `npm run build`; confirm `public/build/manifest.json` exists |
 | Database connection fails | Verify credentials, that the DB user has privileges, and that the host is reachable from PHP |

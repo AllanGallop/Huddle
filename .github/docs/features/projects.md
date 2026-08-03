@@ -8,7 +8,13 @@ Track community build and improvement work from idea through completion.
 
 ## Project list
 
-Browse all projects with status badges, leader, due dates, and volunteer indicators. Members can create new projects; non-admins are automatically assigned as project leader when they do.
+Browse all projects with status badges, categories, leader, due dates, and volunteer indicators. Members can create new projects; non-admins are automatically assigned as project leader when they do.
+
+Filter by status, leader, category, volunteers, and (for leaders/admins) financial status.
+
+## Categories
+
+Projects can have one or more categories (e.g. Woodshop, H&S, Metalwork). Admins manage the category list under [Admin → Categories](admin.md). Categories are assigned when creating or editing a project.
 
 ## Project detail
 
