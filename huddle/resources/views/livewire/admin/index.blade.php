@@ -4,7 +4,7 @@
             <x-material-icon name="admin_panel_settings" class="text-[1.75rem] text-huddle-primary" />
             {{ __('Admin') }}
         </flux:heading>
-        <flux:text class="mt-1">{{ __('Manage team members, tags, membership renewals, branding, organisation bank details, and application updates.') }}</flux:text>
+        <flux:text class="mt-1">{{ __('Manage team members, tags, project categories, membership renewals, branding, organisation bank details, and application updates.') }}</flux:text>
     </div>
 
     @if (session('status'))
@@ -52,6 +52,20 @@
             <span class="inline-flex items-center justify-center gap-2">
                 <x-material-icon name="sell" class="text-[1.125rem]" />
                 {{ __('Tags') }}
+            </span>
+        </button>
+        <button
+            type="button"
+            wire:click="setTab('categories')"
+            @class([
+                'flex-1 rounded-md px-4 py-2 text-sm font-medium transition sm:flex-none',
+                'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $activeTab === 'categories',
+                'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $activeTab !== 'categories',
+            ])
+        >
+            <span class="inline-flex items-center justify-center gap-2">
+                <x-material-icon name="category" class="text-[1.125rem]" />
+                {{ __('Categories') }}
             </span>
         </button>
         <button
@@ -265,6 +279,70 @@
                                                 variant="danger"
                                                 wire:click="deleteTag({{ $flag->id }})"
                                                 wire:confirm="{{ __('Delete tag :name? It will be removed from all users.', ['name' => $flag->name]) }}"
+                                            >
+                                                <x-material-icon name="delete" class="text-[1rem]" />
+                                            </flux:button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+    @endif
+
+    @if ($activeTab === 'categories')
+        <div class="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+            <div class="flex flex-col gap-4 border-b border-zinc-200 p-4 dark:border-zinc-700 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                <div>
+                    <flux:heading size="lg">{{ __('Project categories') }}</flux:heading>
+                    <flux:text class="mt-1 text-sm">{{ __('Labels for projects (woodshop, H&S, metalwork, etc.).') }}</flux:text>
+                </div>
+                <flux:button variant="primary" wire:click="openCreateCategoryModal">
+                    <span class="inline-flex items-center gap-2">
+                        <x-material-icon name="add" class="text-[1.25rem]" />
+                        {{ __('Add category') }}
+                    </span>
+                </flux:button>
+            </div>
+
+            @if ($this->projectCategories->isEmpty())
+                <div class="px-5 py-12 text-center">
+                    <flux:text>{{ __('No categories yet. Create categories to assign them to projects.') }}</flux:text>
+                </div>
+            @else
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="border-b border-zinc-200 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-700">
+                            <tr>
+                                <th class="px-5 py-3">{{ __('Category') }}</th>
+                                <th class="px-5 py-3 hidden md:table-cell">{{ __('Description') }}</th>
+                                <th class="px-5 py-3">{{ __('Projects') }}</th>
+                                <th class="px-5 py-3 text-end">{{ __('Actions') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                            @foreach ($this->projectCategories as $category)
+                                <tr wire:key="category-{{ $category->id }}" class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                                    <td class="px-5 py-3">
+                                        <x-user-flag-badge :name="$category->name" />
+                                    </td>
+                                    <td class="hidden max-w-md px-5 py-3 text-zinc-600 dark:text-zinc-300 md:table-cell">
+                                        {{ $category->description ?: '—' }}
+                                    </td>
+                                    <td class="px-5 py-3 text-zinc-600 dark:text-zinc-300">{{ $category->projects_count }}</td>
+                                    <td class="px-5 py-3">
+                                        <div class="flex justify-end gap-1">
+                                            <flux:button size="sm" variant="ghost" wire:click="openEditCategoryModal({{ $category->id }})">
+                                                <x-material-icon name="edit" class="text-[1rem]" />
+                                            </flux:button>
+                                            <flux:button
+                                                size="sm"
+                                                variant="danger"
+                                                wire:click="deleteCategory({{ $category->id }})"
+                                                wire:confirm="{{ __('Delete category :name? It will be removed from all projects.', ['name' => $category->name]) }}"
                                             >
                                                 <x-material-icon name="delete" class="text-[1rem]" />
                                             </flux:button>
@@ -792,6 +870,27 @@
                 <flux:button type="button" variant="ghost" wire:click="closeTagModal">{{ __('Cancel') }}</flux:button>
                 <flux:button type="submit" variant="primary">
                     {{ $editingTagId ? __('Save changes') : __('Create tag') }}
+                </flux:button>
+            </div>
+        </form>
+    </flux:modal>
+
+    <flux:modal wire:model="showCategoryModal" class="md:max-w-lg">
+        <form wire:submit="saveCategory" class="space-y-6">
+            <div>
+                <flux:heading size="lg">
+                    {{ $editingCategoryId ? __('Edit category') : __('Add category') }}
+                </flux:heading>
+                <flux:text class="mt-1">{{ __('Categories help group projects (woodshop, H&S, and similar).') }}</flux:text>
+            </div>
+
+            <flux:input wire:model="category_name" :label="__('Name')" required />
+            <flux:textarea wire:model="category_description" :label="__('Description (optional)')" rows="3" />
+
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" variant="ghost" wire:click="closeCategoryModal">{{ __('Cancel') }}</flux:button>
+                <flux:button type="submit" variant="primary">
+                    {{ $editingCategoryId ? __('Save changes') : __('Create category') }}
                 </flux:button>
             </div>
         </form>

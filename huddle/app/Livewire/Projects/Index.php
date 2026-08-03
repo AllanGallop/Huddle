@@ -3,6 +3,7 @@
 namespace App\Livewire\Projects;
 
 use App\Models\Project;
+use App\Models\ProjectCategory;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
@@ -18,6 +19,8 @@ class Index extends Component
     public string $statusFilter = '';
 
     public string $leaderFilter = '';
+
+    public string $categoryFilter = '';
 
     public string $volunteersFilter = '';
 
@@ -43,6 +46,9 @@ class Index extends Component
 
     public ?string $due_date = null;
 
+    /** @var array<int> */
+    public array $assignedCategoryIds = [];
+
     public function mount(): void
     {
         $this->leader_id = Auth::id();
@@ -66,7 +72,7 @@ class Index extends Component
 
     public function clearFilters(): void
     {
-        $this->reset(['search', 'statusFilter', 'leaderFilter', 'volunteersFilter', 'financialStatusFilter', 'mineOnly']);
+        $this->reset(['search', 'statusFilter', 'leaderFilter', 'categoryFilter', 'volunteersFilter', 'financialStatusFilter', 'mineOnly']);
     }
 
     #[Computed]
@@ -75,6 +81,7 @@ class Index extends Component
         return $this->search !== ''
             || $this->statusFilter !== ''
             || $this->leaderFilter !== ''
+            || $this->categoryFilter !== ''
             || $this->volunteersFilter !== ''
             || $this->financialStatusFilter !== ''
             || $this->mineOnly;
@@ -84,7 +91,7 @@ class Index extends Component
     public function projects()
     {
         $query = Project::query()
-            ->with(['leader', 'creator'])
+            ->with(['leader', 'creator', 'categories'])
             ->withCount(['comments', 'volunteers', 'images']);
 
         $this->applyFilters($query);
@@ -97,6 +104,12 @@ class Index extends Component
     public function users()
     {
         return User::query()->orderBy('name')->get(['id', 'name']);
+    }
+
+    #[Computed]
+    public function categories()
+    {
+        return ProjectCategory::query()->orderBy('name')->get();
     }
 
     #[Computed]
@@ -146,6 +159,8 @@ class Index extends Component
             'project_status' => ['required', 'in:'.implode(',', Project::STATUSES)],
             'volunteer_required' => ['boolean'],
             'due_date' => ['nullable', 'date'],
+            'assignedCategoryIds' => ['array'],
+            'assignedCategoryIds.*' => ['integer', 'exists:project_categories,id'],
         ];
 
         if ($user->can('assignLeader', Project::class)) {
@@ -158,10 +173,15 @@ class Index extends Component
             $validated['leader_id'] = $user->id;
         }
 
+        $categoryIds = $validated['assignedCategoryIds'] ?? [];
+        unset($validated['assignedCategoryIds']);
+
         $project = Project::create([
             ...$validated,
             'created_by' => Auth::id(),
         ]);
+
+        $project->categories()->sync($categoryIds);
 
         $this->redirect(route('projects.show', $project), navigate: true);
     }
@@ -173,7 +193,8 @@ class Index extends Component
             $query->where(function (Builder $q) use ($term) {
                 $q->where('name', 'like', $term)
                     ->orWhere('description', 'like', $term)
-                    ->orWhereHas('leader', fn (Builder $leader) => $leader->where('name', 'like', $term));
+                    ->orWhereHas('leader', fn (Builder $leader) => $leader->where('name', 'like', $term))
+                    ->orWhereHas('categories', fn (Builder $category) => $category->where('name', 'like', $term));
             });
         }
 
@@ -183,6 +204,13 @@ class Index extends Component
 
         if ($this->leaderFilter !== '') {
             $query->where('leader_id', $this->leaderFilter);
+        }
+
+        if ($this->categoryFilter !== '') {
+            $query->whereHas(
+                'categories',
+                fn (Builder $category) => $category->where('project_categories.id', $this->categoryFilter)
+            );
         }
 
         if ($this->volunteersFilter === 'required') {
@@ -221,10 +249,11 @@ class Index extends Component
 
     protected function resetForm(): void
     {
-        $this->reset(['name', 'description', 'project_status', 'volunteer_required', 'due_date']);
+        $this->reset(['name', 'description', 'project_status', 'volunteer_required', 'due_date', 'assignedCategoryIds']);
         $this->project_status = 'draft';
         $this->volunteer_required = false;
         $this->leader_id = Auth::id();
+        $this->assignedCategoryIds = [];
         $this->resetValidation();
     }
 

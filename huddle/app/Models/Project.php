@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Number;
 
@@ -94,6 +95,12 @@ class Project extends Model
     public function volunteers(): HasMany
     {
         return $this->hasMany(ProjectVolunteer::class);
+    }
+
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(ProjectCategory::class, 'project_category_assignments')
+            ->withTimestamps();
     }
 
     public function statusLabel(): string

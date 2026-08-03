@@ -54,6 +54,13 @@
                 @endforeach
             </flux:select>
 
+            <flux:select wire:model.live="categoryFilter" :label="__('Category')">
+                <flux:select.option value="">{{ __('All categories') }}</flux:select.option>
+                @foreach ($this->categories as $category)
+                    <flux:select.option :value="$category->id">{{ $category->name }}</flux:select.option>
+                @endforeach
+            </flux:select>
+
             <flux:select wire:model.live="volunteersFilter" :label="__('Volunteers')">
                 <flux:select.option value="">{{ __('Any') }}</flux:select.option>
                 <flux:select.option value="required">{{ __('Volunteers needed') }}</flux:select.option>
@@ -181,6 +188,13 @@
                                         <x-material-icon name="folder" class="shrink-0 text-[1.125rem] text-huddle-primary" />
                                         {{ $project->name }}
                                     </p>
+                                    @if ($project->categories->isNotEmpty())
+                                        <div class="mt-1.5 flex flex-wrap gap-1">
+                                            @foreach ($project->categories as $category)
+                                                <x-user-flag-badge :name="$category->name" wire:key="project-{{ $project->id }}-cat-{{ $category->id }}" />
+                                            @endforeach
+                                        </div>
+                                    @endif
                                     <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
                                         <span class="inline-flex items-center gap-1">
                                             <x-material-icon name="chat_bubble_outline" class="text-[0.875rem]" />
@@ -311,6 +325,19 @@
             <flux:checkbox wire:model="volunteer_required" :label="__('Volunteers required')" />
 
             <flux:input wire:model="due_date" type="date" :label="__('Due date (optional)')" />
+
+            @if ($this->categories->isNotEmpty())
+                <x-assign-select
+                    :options="$this->categories"
+                    :selected-ids="$assignedCategoryIds"
+                    wire-model="assignedCategoryIds"
+                    :label="__('Categories')"
+                    :placeholder="__('Select categories…')"
+                    :search-placeholder="__('Search categories…')"
+                    :empty-message="__('No matching categories.')"
+                    error-name="assignedCategoryIds"
+                />
+            @endif
 
             <div class="flex justify-end gap-2">
                 <flux:button type="button" variant="ghost" wire:click="closeCreateModal">

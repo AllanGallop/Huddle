@@ -7,6 +7,7 @@ use App\Concerns\ProfileValidationRules;
 use App\Models\MembershipRenewal;
 use App\Models\MembershipRenewalAssignment;
 use App\Models\OrganizationSetting;
+use App\Models\ProjectCategory;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\UserFlags;
@@ -74,6 +75,14 @@ class Index extends Component
 
     public string $tag_description = '';
 
+    public bool $showCategoryModal = false;
+
+    public ?int $editingCategoryId = null;
+
+    public string $category_name = '';
+
+    public string $category_description = '';
+
     /** @var array<int> */
     public array $assignedFlagIds = [];
 
@@ -120,7 +129,7 @@ class Index extends Component
 
     public function setTab(string $tab): void
     {
-        if (in_array($tab, ['users', 'tags', 'membership', 'bank', 'branding', 'updates'], true)) {
+        if (in_array($tab, ['users', 'tags', 'categories', 'membership', 'bank', 'branding', 'updates'], true)) {
             $this->activeTab = $tab;
         }
     }
@@ -168,6 +177,15 @@ class Index extends Component
     {
         return UserFlags::query()
             ->withCount('users')
+            ->orderBy('name')
+            ->get();
+    }
+
+    #[Computed]
+    public function projectCategories()
+    {
+        return ProjectCategory::query()
+            ->withCount('projects')
             ->orderBy('name')
             ->get();
     }
@@ -546,6 +564,73 @@ class Index extends Component
 
         unset($this->flags, $this->users);
         session()->flash('status', __('Tag deleted successfully.'));
+    }
+
+    public function openCreateCategoryModal(): void
+    {
+        $this->resetCategoryForm();
+        $this->showCategoryModal = true;
+    }
+
+    public function openEditCategoryModal(int $categoryId): void
+    {
+        $category = ProjectCategory::query()->findOrFail($categoryId);
+
+        $this->editingCategoryId = $category->id;
+        $this->category_name = $category->name;
+        $this->category_description = $category->description ?? '';
+        $this->showCategoryModal = true;
+    }
+
+    public function closeCategoryModal(): void
+    {
+        $this->showCategoryModal = false;
+        $this->resetCategoryForm();
+        $this->resetValidation();
+    }
+
+    public function saveCategory(): void
+    {
+        $validated = $this->validate([
+            'category_name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('project_categories', 'name')->ignore($this->editingCategoryId),
+            ],
+            'category_description' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $data = [
+            'name' => $validated['category_name'],
+            'description' => $validated['category_description'] ?? '',
+        ];
+
+        if ($this->editingCategoryId) {
+            ProjectCategory::query()->findOrFail($this->editingCategoryId)->update($data);
+            session()->flash('status', __('Category updated successfully.'));
+        } else {
+            ProjectCategory::create($data);
+            session()->flash('status', __('Category created successfully.'));
+        }
+
+        $this->closeCategoryModal();
+        unset($this->projectCategories);
+    }
+
+    public function deleteCategory(int $categoryId): void
+    {
+        $category = ProjectCategory::query()->findOrFail($categoryId);
+        $category->projects()->detach();
+        $category->delete();
+
+        unset($this->projectCategories);
+        session()->flash('status', __('Category deleted successfully.'));
+    }
+
+    protected function resetCategoryForm(): void
+    {
+        $this->reset(['editingCategoryId', 'category_name', 'category_description']);
     }
 
     protected function syncUserFlags(User $user): void

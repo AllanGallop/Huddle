@@ -3,6 +3,7 @@
 namespace App\Livewire\Projects;
 
 use App\Models\Project;
+use App\Models\ProjectCategory;
 use App\Models\ProjectComment;
 use App\Models\ProjectImage;
 use App\Models\ProjectVolunteer;
@@ -72,9 +73,12 @@ class Show extends Component
 
     public string $documentEmail = '';
 
+    /** @var array<int> */
+    public array $assignedCategoryIds = [];
+
     public function mount(Project $project): void
     {
-        $this->project = $project->load(['leader', 'creator']);
+        $this->project = $project->load(['leader', 'creator', 'categories']);
 
         if (Auth::user()->canManageProjectFinancials($this->project)) {
             $this->fillFinancialFields();
@@ -122,6 +126,12 @@ class Show extends Component
     public function users()
     {
         return User::query()->orderBy('name')->get(['id', 'name']);
+    }
+
+    #[Computed]
+    public function categories()
+    {
+        return ProjectCategory::query()->orderBy('name')->get();
     }
 
     #[Computed]
@@ -240,6 +250,7 @@ class Show extends Component
         $this->volunteer_required = $this->project->volunteer_required;
         $this->leader_id = $this->project->leader_id;
         $this->due_date = $this->project->due_date?->format('Y-m-d');
+        $this->assignedCategoryIds = $this->project->categories->pluck('id')->map(fn ($id) => (int) $id)->all();
         $this->showEditModal = true;
     }
 
@@ -260,10 +271,16 @@ class Show extends Component
             'volunteer_required' => ['boolean'],
             'leader_id' => ['required', 'exists:users,id'],
             'due_date' => ['nullable', 'date'],
+            'assignedCategoryIds' => ['array'],
+            'assignedCategoryIds.*' => ['integer', 'exists:project_categories,id'],
         ]);
 
+        $categoryIds = $validated['assignedCategoryIds'] ?? [];
+        unset($validated['assignedCategoryIds']);
+
         $this->project->update($validated);
-        $this->project->load(['leader', 'creator']);
+        $this->project->categories()->sync($categoryIds);
+        $this->project->load(['leader', 'creator', 'categories']);
 
         if ($this->canManageFinancials) {
             $this->due_date = $this->project->due_date?->format('Y-m-d');

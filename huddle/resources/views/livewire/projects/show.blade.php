@@ -9,6 +9,9 @@
             <flux:heading size="xl" class="mt-2">{{ $project->name }}</flux:heading>
             <div class="mt-3 flex flex-wrap items-center gap-3">
                 <x-project-status-badge :status="$project->project_status" />
+                @foreach ($project->categories as $category)
+                    <x-user-flag-badge :name="$category->name" wire:key="show-cat-{{ $category->id }}" />
+                @endforeach
                 <flux:text class="text-sm">
                     {{ __('Led by') }}
                     <x-user-link :user="$project->leader" class="text-zinc-700 dark:text-zinc-200" />
@@ -368,6 +371,20 @@
                         <dt class="text-zinc-500">{{ __('Created by') }}</dt>
                         <dd class="font-medium text-zinc-900 dark:text-white">{{ $project->creator->name }}</dd>
                     </div>
+                    <div>
+                        <dt class="text-zinc-500">{{ __('Categories') }}</dt>
+                        <dd class="mt-1">
+                            @if ($project->categories->isEmpty())
+                                <span class="text-zinc-400">—</span>
+                            @else
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach ($project->categories as $category)
+                                        <x-user-flag-badge :name="$category->name" wire:key="detail-cat-{{ $category->id }}" />
+                                    @endforeach
+                                </div>
+                            @endif
+                        </dd>
+                    </div>
                     @if ($project->due_date)
                         <div>
                             <dt class="text-zinc-500">{{ __('Due date') }}</dt>
@@ -443,6 +460,19 @@
             </div>
 
             <flux:checkbox wire:model="volunteer_required" :label="__('Volunteers required')" />
+
+            @if ($this->categories->isNotEmpty())
+                <x-assign-select
+                    :options="$this->categories"
+                    :selected-ids="$assignedCategoryIds"
+                    wire-model="assignedCategoryIds"
+                    :label="__('Categories')"
+                    :placeholder="__('Select categories…')"
+                    :search-placeholder="__('Search categories…')"
+                    :empty-message="__('No matching categories.')"
+                    error-name="assignedCategoryIds"
+                />
+            @endif
 
             <div class="flex justify-end gap-2">
                 <flux:button type="button" variant="ghost" wire:click="closeEditModal">
