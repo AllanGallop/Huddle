@@ -64,12 +64,16 @@ class Project extends Model
 
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class, 'created_by')->withDefault([
+            'name' => __('Former member'),
+        ]);
     }
 
     public function leader(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'leader_id');
+        return $this->belongsTo(User::class, 'leader_id')->withDefault([
+            'name' => __('Former member'),
+        ]);
     }
 
     public function comments(): HasMany

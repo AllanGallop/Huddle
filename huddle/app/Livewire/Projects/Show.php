@@ -11,6 +11,7 @@ use App\Mail\ProjectInvoiceMail;
 use App\Mail\ProjectQuoteMail;
 use App\Services\ProjectDocumentService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
@@ -77,7 +78,7 @@ class Show extends Component
 
         if (Auth::user()->canManageProjectFinancials($this->project)) {
             $this->fillFinancialFields();
-            $this->documentEmail = $this->project->leader->email ?? Auth::user()->email;
+            $this->documentEmail = $this->project->leader?->email ?? Auth::user()->email;
         }
     }
 
@@ -394,11 +395,27 @@ class Show extends Component
     {
         $this->authorizeManageProject();
 
-        foreach ($this->project->images as $image) {
-            Storage::disk($image->storageDisk())->delete($image->image_url);
-        }
+        $project = $this->project;
 
-        $this->project->delete();
+        DB::transaction(function () use ($project): void {
+            foreach ($project->images as $image) {
+                Storage::disk($image->storageDisk())->delete($image->image_url);
+            }
+
+            $project->images()->delete();
+            $project->volunteers()->delete();
+
+            // Child comments first (self-referencing parent_comment_id FK).
+            ProjectComment::query()
+                ->where('project_id', $project->id)
+                ->whereNotNull('parent_comment_id')
+                ->delete();
+            $project->comments()->delete();
+
+            DB::table('project_tasks')->where('project_id', $project->id)->delete();
+
+            $project->delete();
+        });
 
         $this->redirect(route('projects.index'), navigate: true);
     }

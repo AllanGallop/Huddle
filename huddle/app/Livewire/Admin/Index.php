@@ -263,14 +263,37 @@ class Index extends Component
         $user->role_id = $validated['role_id'];
         $user->save();
 
-        $token = Password::broker()->createToken($user);
-        $user->notify(new UserInvitationNotification($token));
-
+        $this->sendInvitationEmail($user);
         $this->syncUserFlags($user);
 
         $this->closeUserModal();
         unset($this->users);
         session()->flash('status', __('Invitation sent. :name can set their password via the email link.', ['name' => $user->name]));
+    }
+
+    public function resendInvitation(int $userId): void
+    {
+        abort_unless(Auth::user()?->isAdmin(), 403);
+
+        $user = User::query()->findOrFail($userId);
+
+        if ($user->id === Auth::id()) {
+            $this->addError('user', __('You cannot send an invitation to your own account.'));
+
+            return;
+        }
+
+        $this->sendInvitationEmail($user);
+
+        session()->flash('status', __('Invitation resent to :email. The previous link is no longer valid.', [
+            'email' => $user->email,
+        ]));
+    }
+
+    protected function sendInvitationEmail(User $user): void
+    {
+        $token = Password::broker()->createToken($user);
+        $user->notify(new UserInvitationNotification($token));
     }
 
     protected function updateUser(): void

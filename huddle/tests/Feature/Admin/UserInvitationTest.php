@@ -35,4 +35,36 @@ class UserInvitationTest extends TestCase
         $this->assertNotNull($invited);
         Notification::assertSentTo($invited, UserInvitationNotification::class);
     }
+
+    public function test_admin_can_resend_invitation(): void
+    {
+        Notification::fake();
+
+        $admin = User::factory()->admin()->create();
+        $member = User::factory()->create([
+            'email' => 'pending@example.com',
+            'email_verified_at' => null,
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(\App\Livewire\Admin\Index::class)
+            ->call('resendInvitation', $member->id)
+            ->assertHasNoErrors();
+
+        Notification::assertSentTo($member, UserInvitationNotification::class);
+    }
+
+    public function test_admin_cannot_resend_invitation_to_self(): void
+    {
+        Notification::fake();
+
+        $admin = User::factory()->admin()->create();
+
+        Livewire::actingAs($admin)
+            ->test(\App\Livewire\Admin\Index::class)
+            ->call('resendInvitation', $admin->id)
+            ->assertHasErrors('user');
+
+        Notification::assertNothingSent();
+    }
 }

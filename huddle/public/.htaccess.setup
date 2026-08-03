@@ -1,9 +1,11 @@
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
-        Options -MultiViews -Indexes
+        # Some shared hosts (including Ionos) forbid Options in .htaccess and return 500.
+        # Options -MultiViews -Indexes
     </IfModule>
 
     RewriteEngine On
+    RewriteBase /
 
     # First-time setup wizard
     RewriteCond %{REQUEST_URI} !^/setup\.php$
@@ -26,5 +28,5 @@
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [L]
+    RewriteRule ^ index.php%{REQUEST_URI} [L,QSA]
 </IfModule>

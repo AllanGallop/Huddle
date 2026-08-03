@@ -183,6 +183,16 @@
                                 <td class="hidden px-5 py-3 text-zinc-500 sm:table-cell">{{ $user->created_at->format('j M Y') }}</td>
                                 <td class="px-5 py-3">
                                     <div class="flex justify-end gap-1">
+                                        <flux:button
+                                            size="sm"
+                                            variant="ghost"
+                                            wire:click="resendInvitation({{ $user->id }})"
+                                            wire:confirm="{{ __('Resend invitation email to :email? Any previous invite link will stop working.', ['email' => $user->email]) }}"
+                                            :disabled="$user->id === auth()->id()"
+                                            title="{{ __('Resend invite') }}"
+                                        >
+                                            <x-material-icon name="mail" class="text-[1rem]" />
+                                        </flux:button>
                                         <flux:button size="sm" variant="ghost" wire:click="openEditUserModal({{ $user->id }})">
                                             <x-material-icon name="edit" class="text-[1rem]" />
                                         </flux:button>

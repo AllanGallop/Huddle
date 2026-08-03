@@ -148,4 +148,68 @@ class ProjectSecurityTest extends TestCase
         $this->assertNotNull($project);
         $this->assertSame($leader->id, $project->leader_id);
     }
+
+    public function test_admin_can_delete_project_with_related_records(): void
+    {
+        Storage::fake('local');
+
+        $admin = User::factory()->admin()->create();
+        $owner = User::factory()->create();
+        $project = $this->createProjectFor($owner);
+        $this->createImageFixture($project);
+
+        \App\Models\ProjectVolunteer::create([
+            'project_id' => $project->id,
+            'user_id' => $owner->id,
+        ]);
+
+        \App\Models\ProjectComment::create([
+            'project_id' => $project->id,
+            'user_id' => $owner->id,
+            'comment' => 'Keep me from blocking delete',
+        ]);
+
+        \Illuminate\Support\Facades\DB::table('project_tasks')->insert([
+            'project_id' => $project->id,
+            'user_id' => $owner->id,
+            'task' => 'A task',
+            'task_status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(ProjectsShow::class, ['project' => $project])
+            ->call('deleteProject')
+            ->assertRedirect(route('projects.index'));
+
+        $this->assertDatabaseMissing('projects', ['id' => $project->id]);
+        $this->assertDatabaseCount('project_images', 0);
+        $this->assertDatabaseCount('project_volunteers', 0);
+        $this->assertDatabaseCount('project_comments', 0);
+        $this->assertDatabaseCount('project_tasks', 0);
+    }
+
+    public function test_admin_can_delete_project_after_owner_was_erased(): void
+    {
+        Storage::fake('local');
+
+        $admin = User::factory()->admin()->create();
+        $owner = User::factory()->create();
+        $project = $this->createProjectFor($owner);
+        $this->createImageFixture($project);
+
+        app(\App\Services\UserDataErasureService::class)->erase($owner);
+
+        $project = $project->fresh();
+        $this->assertNotNull($project);
+
+        Livewire::actingAs($admin)
+            ->test(ProjectsShow::class, ['project' => $project])
+            ->assertOk()
+            ->call('deleteProject')
+            ->assertRedirect(route('projects.index'));
+
+        $this->assertDatabaseMissing('projects', ['id' => $project->id]);
+    }
 }

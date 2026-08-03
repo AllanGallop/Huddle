@@ -1,9 +1,11 @@
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
-        Options -MultiViews -Indexes
+        # Some shared hosts (including Ionos) forbid Options in .htaccess and return 500.
+        # Options -MultiViews -Indexes
     </IfModule>
 
     RewriteEngine On
+    RewriteBase /
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
@@ -19,7 +21,9 @@
     RewriteRule ^ %1 [L,R=301]
 
     # Send Requests To Front Controller...
+    # PATH_INFO form (index.php/...) is required on some Ionos PHP CGI setups;
+    # plain "index.php" rewrites can 500 while /index.php/login works.
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [L]
+    RewriteRule ^ index.php%{REQUEST_URI} [L,QSA]
 </IfModule>
