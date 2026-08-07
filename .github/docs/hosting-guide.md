@@ -28,6 +28,7 @@ For MySQL/MariaDB, also ensure `pdo_mysql` is installed. For SQLite, `pdo_sqlite
 5. Set directory permissions
 6. Run the web installer at /setup.php
 7. Harden production settings
+8. Configure cron (community digest scheduler)
 ```
 
 ### Pre-built release package
@@ -211,8 +212,8 @@ GDPR_CONTACT_EMAIL=privacy@your-domain.example
 ### Additional recommendations
 
 - **HTTPS** — terminate TLS at your reverse proxy or web server
-- **Queue worker** — run `php artisan queue:work` via systemd or supervisor for email and background jobs (`QUEUE_CONNECTION=database` by default)
-- **Scheduler** — add a cron entry: `* * * * * cd /var/www/huddle/huddle && php artisan schedule:run >> /dev/null 2>&1`
+- **Queue worker** — run `php artisan queue:work` via systemd or supervisor for background jobs (`QUEUE_CONNECTION=database` by default). The community digest sends mail synchronously, so a worker is not required for digests alone, but invitations and other queued work still need one (or set `QUEUE_CONNECTION=sync` on small shared hosts)
+- **Scheduler (cron)** — required for the [community digest](features/community-digest.md); see [Step 8](#step-8-configure-cron-scheduler) below
 - **Backups** — back up the database and `storage/app/` regularly
 - **Remove setup.php access** — after confirming the install, you may delete or restrict access to `public/setup.php`; the installed `.htaccess` no longer redirects to it
 
@@ -223,6 +224,81 @@ If user-uploaded files (project images, branding) should be publicly accessible 
 ```bash
 php artisan storage:link
 ```
+
+## Step 8: Configure cron (scheduler)
+
+Huddle uses Laravel’s scheduler to send the [community digest](features/community-digest.md) every **Saturday at 09:00** (server timezone). Cron must call `schedule:run` every minute; Laravel decides when to run `digest:send`.
+
+### Timezone
+
+`9:00` uses the app timezone from `.env` / `config/app.php` (`APP_TIMEZONE`, default `UTC`). Set it to your local zone if members expect Saturday morning in UK time, for example:
+
+```dotenv
+APP_TIMEZONE=Europe/London
+```
+
+### VPS / dedicated server
+
+Edit the crontab for a user that can read the app and write to `storage/`:
+
+```bash
+crontab -e
+```
+
+Add:
+
+```cron
+* * * * * cd /var/www/huddle/huddle && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Adjust the path and PHP binary if needed (for example `php8.4` or `/usr/bin/php`).
+
+### Shared hosting (Ionos and similar)
+
+Many shared hosts expose cron in the control panel rather than `crontab -e`.
+
+1. Open **Cron Jobs** (Ionos: Hosting → your package → **Cron Jobs**, or via SSH if allowed)
+2. Schedule the job to run **every minute** (`* * * * *`)
+3. Use the host’s PHP CLI binary and the absolute path to `artisan`
+
+Example command (replace paths and PHP version with what your host provides):
+
+```bash
+cd $HOME/huddle && php8.5 artisan schedule:run >> /dev/null 2>&1
+```
+
+Or with an absolute PHP path:
+
+```bash
+/usr/bin/php8.5 /homepages/.../huddle/artisan schedule:run >> /dev/null 2>&1
+```
+
+Tips for Ionos-style hosts:
+
+- Prefer the same PHP major version the site uses (for example `php8.5`)
+- The working directory must be the Laravel root (the folder that contains `artisan`), not `public/`
+- If the panel only allows intervals coarser than every minute, use the finest available (hourly is not enough for a reliable Saturday 09:00 window; every minute is strongly preferred)
+- Mail must already be configured in `.env` (`MAIL_*`) or digests will fail silently / log errors
+
+### Verify
+
+List scheduled tasks:
+
+```bash
+cd /path/to/huddle   # Laravel root (contains artisan)
+php artisan schedule:list
+```
+
+You should see `digest:send` set for Saturdays at 09:00.
+
+Send a one-off test (skips the “nothing new” filter):
+
+```bash
+php artisan digest:send --force
+# optional: php artisan digest:send --user=1 --force
+```
+
+Check `storage/logs/laravel.log` if mail does not arrive.
 
 ## Updating an existing installation
 
@@ -271,6 +347,7 @@ Restart queue workers after deploying code changes.
 | Setup wizard loops | Delete `.env`, restore `.htaccess.setup`, clear browser cookies |
 | CSS/JS missing | Run `npm run build`; confirm `public/build/manifest.json` exists |
 | Database connection fails | Verify credentials, that the DB user has privileges, and that the host is reachable from PHP |
-| Emails not sending | Configure `MAIL_*` variables and ensure a queue worker is running |
+| Digests not sending | Confirm cron runs `php artisan schedule:run` every minute; check `php artisan schedule:list`; verify `MAIL_*` and `APP_TIMEZONE`; try `php artisan digest:send --force` |
+| Emails not sending | Configure `MAIL_*` variables; for queued mail ensure a queue worker is running, or use `QUEUE_CONNECTION=sync` |
 
 For local development workflows, see the [development guide](development.md). For Docker-based setup, see the [Docker install guide](docker-install-guide.md). For a tour of what Huddle offers, see the [features guide](features/).

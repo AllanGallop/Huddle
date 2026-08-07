@@ -1,12 +1,7 @@
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-            <flux:link :href="route('forms.index')" wire:navigate class="inline-flex items-center gap-1 text-sm">
-                <x-material-icon name="arrow_back" class="text-[1rem]" />
-                {{ __('Back to forms') }}
-            </flux:link>
             <flux:heading size="xl" class="mt-2 inline-flex items-center gap-2">
-                <x-material-icon name="edit_note" class="text-[1.75rem] text-huddle-primary" />
                 {{ __('Manage forms') }}
             </flux:heading>
             <flux:text class="mt-1">{{ __('Create surveys and exams for members to complete.') }}</flux:text>

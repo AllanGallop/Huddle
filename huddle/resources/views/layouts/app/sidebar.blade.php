@@ -3,7 +3,7 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-zinc-100 text-zinc-900 antialiased dark:bg-zinc-900 dark:text-zinc-100">
+    <body class="min-h-screen bg-gradient-to-br from-zinc-100 via-teal-50/40 to-amber-50/30 text-zinc-900 antialiased dark:bg-none dark:bg-zinc-900 dark:text-zinc-100">
         <flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-300/80 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-none">
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />

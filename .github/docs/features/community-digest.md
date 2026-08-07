@@ -6,7 +6,7 @@ A weekly email summary of recent community activity.
 
 ## Schedule
 
-Sent every **Saturday at 9:00** via the application scheduler (`digest:send`).
+Sent every **Saturday at 9:00** (app timezone) via the application scheduler (`digest:send`). Hosts must run `php artisan schedule:run` every minute — see the [hosting guide](../hosting-guide.md#step-8-configure-cron-scheduler).
 
 ## Content
 
@@ -23,4 +23,4 @@ Members can opt out from **Settings → Notifications**. Each email includes a s
 
 ## Requirements
 
-Requires a configured mail driver and a running queue worker. See the [hosting guide](../hosting-guide.md).
+Requires a configured mail driver (`MAIL_*` in `.env`) and a running cron entry for Laravel’s scheduler. See [Configure cron (scheduler)](../hosting-guide.md#step-8-configure-cron-scheduler) in the hosting guide.

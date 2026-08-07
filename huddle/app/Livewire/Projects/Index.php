@@ -242,7 +242,7 @@ class Index extends Component
             'updated_at' => $query->orderBy('updated_at', $direction),
             'due_date' => $query->orderByRaw('due_date is null, due_date '.$direction),
             'financial' => $query->orderByRaw('financial_status is null, financial_status '.$direction),
-            'volunteers' => $query->orderBy('volunteers_count', $direction),
+            'volunteers' => $query->orderBy('volunteer_required', $direction),
             default => $query->orderBy('created_at', $direction),
         };
     }

@@ -1,7 +1,7 @@
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="min-w-0 flex-1">
-            <flux:link :href="route('events.index')" wire:navigate class="inline-flex items-center gap-1 text-sm no-underline hover:no-underline">
+            <flux:link :href="route('events.index')" wire:navigate class="inline-flex items-center gap-1 text-sm">
                 <x-material-icon name="arrow_back" class="text-[1rem]" />
                 {{ __('Back to events') }}
             </flux:link>

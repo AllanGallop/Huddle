@@ -59,7 +59,7 @@ If you cannot change the document root, contact Ionos support or use a subdomain
 1. Set permissions — `storage/`, `bootstrap/cache/`, and `database/` must be writable
 2. Visit `https://your-domain.example/setup.php`
 3. Complete the [installer](features/setup.md)
-4. Configure mail, cron, and queue worker — see the [hosting guide](hosting-guide.md)
+4. Configure mail and [cron for the community digest](hosting-guide.md#step-8-configure-cron-scheduler) — see the [hosting guide](hosting-guide.md)
 
 ## Automated FTP deploy
 

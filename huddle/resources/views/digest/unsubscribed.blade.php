@@ -13,7 +13,7 @@
                 {{ __(':email will no longer receive community digest emails.', ['email' => $user->email]) }}
             </p>
             <p class="mt-4 text-sm text-zinc-500">
-                <a href="{{ route('notifications.edit') }}" class="font-medium text-huddle-primary hover:underline">{{ __('Re-enable in notification settings') }}</a>
+                <a href="{{ route('notifications.edit') }}" class="font-medium text-huddle-primary">{{ __('Re-enable in notification settings') }}</a>
             </p>
         </div>
     </body>

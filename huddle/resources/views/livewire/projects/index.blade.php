@@ -1,7 +1,12 @@
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-            <flux:heading size="xl">{{ __('Projects') }}</flux:heading>
+            <flux:heading size="xl" class="inline-flex items-center gap-2.5">
+                <span class="flex size-10 items-center justify-center rounded-xl bg-huddle-primary/15 text-huddle-primary">
+                    <x-material-icon name="folder" class="text-[1.5rem]" />
+                </span>
+                {{ __('Projects') }}
+            </flux:heading>
             <flux:text class="mt-1">{{ __('Browse, filter, and sort community projects.') }}</flux:text>
         </div>
         <flux:button variant="primary" wire:click="openCreateModal">
@@ -13,7 +18,7 @@
     </div>
 
     {{-- Filters --}}
-    <div class="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900 sm:p-5">
+    <div class="rounded-xl border border-zinc-200 border-s-4 border-s-huddle-primary bg-white p-4 dark:border-zinc-700 dark:border-s-huddle-primary dark:bg-zinc-900 sm:p-5">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <flux:heading size="sm" class="inline-flex items-center gap-2">
                 <x-material-icon name="filter_list" class="text-[1.125rem] text-huddle-primary" />
@@ -115,7 +120,7 @@
                         :sorted="$sortBy === 'name'"
                         :direction="$sortBy === 'name' ? $sortDirection : null"
                         wire:click="sort('name')"
-                        class="min-w-[12rem]"
+                        class="min-w-[12rem] border-s-4 border-s-transparent"
                     >
                         {{ __('Project') }}
                     </flux:table.column>
@@ -134,6 +139,15 @@
                         wire:click="sort('status')"
                     >
                         {{ __('Status') }}
+                    </flux:table.column>
+                    <flux:table.column
+                        sortable
+                        :sorted="$sortBy === 'volunteers'"
+                        :direction="$sortBy === 'volunteers' ? $sortDirection : null"
+                        wire:click="sort('volunteers')"
+                        class="hidden sm:table-cell"
+                    >
+                        {{ __('Volunteers') }}
                     </flux:table.column>
                     <flux:table.column
                         sortable
@@ -177,63 +191,87 @@
 
                 <flux:table.rows>
                     @foreach ($this->projects as $project)
+                        @php
+                            $statusAccent = match ($project->project_status) {
+                                'outstanding' => 'border-s-huddle-alt',
+                                'in-progress' => 'border-s-huddle-primary',
+                                'completed' => 'border-s-huddle-comp',
+                                'cancelled' => 'border-s-huddle-accent',
+                                'archived' => 'border-s-zinc-300 dark:border-s-zinc-600',
+                                default => 'border-s-zinc-300 dark:border-s-zinc-600',
+                            };
+                        @endphp
                         <flux:table.row
                             wire:key="project-{{ $project->id }}"
                             class="cursor-pointer transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60"
                             wire:click="viewProject({{ $project->id }})"
                         >
-                            <flux:table.cell variant="strong" class="max-w-md">
+                            <flux:table.cell variant="strong" @class(['max-w-md border-s-4 ps-3', $statusAccent])>
                                 <div class="min-w-0">
-                                    <p class="flex items-center gap-2 truncate font-medium text-zinc-900 dark:text-white">
-                                        <x-material-icon name="folder" class="shrink-0 text-[1.125rem] text-huddle-primary" />
-                                        {{ $project->name }}
-                                    </p>
-                                    @if ($project->categories->isNotEmpty())
-                                        <div class="mt-1.5 flex flex-wrap gap-1">
-                                            @foreach ($project->categories as $category)
-                                                <x-user-flag-badge :name="$category->name" wire:key="project-{{ $project->id }}-cat-{{ $category->id }}" />
-                                            @endforeach
-                                        </div>
-                                    @endif
-                                    <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
-                                        <span class="inline-flex items-center gap-1">
-                                            <x-material-icon name="chat_bubble_outline" class="text-[0.875rem]" />
-                                            {{ $project->comments_count }}
-                                        </span>
-                                        <span class="inline-flex items-center gap-1">
-                                            <x-material-icon name="group" class="text-[0.875rem]" />
-                                            {{ $project->volunteers_count }}
-                                        </span>
-                                        <span class="inline-flex items-center gap-1">
-                                            <x-material-icon name="image" class="text-[0.875rem]" />
-                                            {{ $project->images_count }}
-                                        </span>
+                                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                        <p class="truncate font-medium text-zinc-900 dark:text-white">
+                                            {{ $project->name }}
+                                        </p>
+                                        @foreach ($project->categories as $category)
+                                            <x-user-flag-badge :name="$category->name" wire:key="project-{{ $project->id }}-cat-{{ $category->id }}" />
+                                        @endforeach
                                     </div>
-                                    @if ($project->volunteer_required)
-                                        <span class="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-huddle-accent">
-                                            <x-material-icon name="volunteer_activism" class="text-[0.875rem]" />
-                                            {{ __('Volunteers needed') }}
+                                    <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
+                                        <flux:tooltip :content="__('Comments')" position="top">
+                                            <span class="inline-flex items-center gap-1 text-huddle-primary">
+                                                <x-material-icon name="chat_bubble" class="text-[0.875rem]" />
+                                                {{ $project->comments_count }}
+                                            </span>
+                                        </flux:tooltip>
+                                        <flux:tooltip :content="__('Volunteers')" position="top">
+                                            <span class="inline-flex items-center gap-1 text-huddle-accent">
+                                                <x-material-icon name="group" class="text-[0.875rem]" />
+                                                {{ $project->volunteers_count }}
+                                            </span>
+                                        </flux:tooltip>
+                                        <flux:tooltip :content="__('Images')" position="top">
+                                            <span class="inline-flex items-center gap-1 text-huddle-alt">
+                                                <x-material-icon name="image" class="text-[0.875rem]" />
+                                                {{ $project->images_count }}
+                                            </span>
+                                        </flux:tooltip>
+                                        <span class="inline-flex items-center gap-1 text-zinc-400 lg:hidden">
+                                            <x-material-icon name="calendar_today" class="text-[0.875rem]" />
+                                            {{ $project->created_at->format('j M Y') }}
+                                            @if ($project->updated_at->ne($project->created_at))
+                                                · {{ $project->updated_at->format('j M Y') }}
+                                            @endif
                                         </span>
-                                    @endif
-                                    <p class="mt-1 flex items-center gap-1 text-xs text-zinc-400 lg:hidden">
-                                        <x-material-icon name="calendar_today" class="text-[0.875rem]" />
-                                        {{ $project->created_at->format('j M Y') }}
-                                        @if ($project->updated_at->ne($project->created_at))
-                                            · {{ __('Updated') }} {{ $project->updated_at->format('j M Y') }}
+                                        @if ($project->volunteer_required)
+                                            <span class="inline-flex items-center gap-1 rounded-full bg-huddle-accent/15 px-2 py-0.5 text-xs font-medium text-huddle-accent sm:hidden">
+                                                <x-material-icon name="volunteer_activism" class="text-[0.875rem]" />
+                                                {{ __('Wanted') }}
+                                            </span>
                                         @endif
-                                    </p>
+                                    </div>
                                 </div>
                             </flux:table.cell>
 
                             <flux:table.cell>
                                 <span class="inline-flex items-center gap-1.5 whitespace-nowrap">
-                                    <x-material-icon name="person" class="text-[1rem] text-zinc-400" />
+                                    <x-material-icon name="person" class="text-[1rem] text-huddle-primary" />
                                     {{ $project->leader->name }}
                                 </span>
                             </flux:table.cell>
 
                             <flux:table.cell>
                                 <x-project-status-badge :status="$project->project_status" />
+                            </flux:table.cell>
+
+                            <flux:table.cell class="hidden sm:table-cell">
+                                @if ($project->volunteer_required)
+                                    <span class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-huddle-accent/15 px-2.5 py-0.5 text-xs font-medium text-huddle-accent">
+                                        <x-material-icon name="volunteer_activism" class="text-[0.875rem]" />
+                                        {{ __('Wanted') }}
+                                    </span>
+                                @else
+                                    <span class="text-zinc-400">—</span>
+                                @endif
                             </flux:table.cell>
 
                             <flux:table.cell class="hidden whitespace-nowrap md:table-cell">
@@ -243,9 +281,17 @@
                                         @class([
                                             'inline-flex items-center gap-1',
                                             'font-medium text-red-600 dark:text-red-400' => $project->isOverdue(),
+                                            'text-huddle-alt' => ! $project->isOverdue(),
                                         ])
                                     >
-                                        <x-material-icon name="event" class="text-[1rem] text-zinc-400" />
+                                        <x-material-icon
+                                            name="event"
+                                            @class([
+                                                'text-[1rem]',
+                                                'text-red-500' => $project->isOverdue(),
+                                                'text-huddle-alt' => ! $project->isOverdue(),
+                                            ])
+                                        />
                                         {{ $project->due_date->format('j M Y') }}
                                     </time>
                                 @else
@@ -267,9 +313,9 @@
                                 <time
                                     datetime="{{ $project->created_at->toIso8601String() }}"
                                     title="{{ $project->created_at->format('j F Y, H:i') }}"
-                                    class="inline-flex items-center gap-1"
+                                    class="inline-flex items-center gap-1 text-zinc-600 dark:text-zinc-400"
                                 >
-                                    <x-material-icon name="event" class="text-[1rem] text-zinc-400" />
+                                    <x-material-icon name="event" class="text-[1rem] text-huddle-comp" />
                                     {{ $project->created_at->format('j M Y') }}
                                 </time>
                             </flux:table.cell>
@@ -278,9 +324,9 @@
                                 <time
                                     datetime="{{ $project->updated_at->toIso8601String() }}"
                                     title="{{ $project->updated_at->format('j F Y, H:i') }}"
-                                    class="inline-flex items-center gap-1"
+                                    class="inline-flex items-center gap-1 text-zinc-600 dark:text-zinc-400"
                                 >
-                                    <x-material-icon name="update" class="text-[1rem] text-zinc-400" />
+                                    <x-material-icon name="update" class="text-[1rem] text-huddle-primary" />
                                     {{ $project->updated_at->format('j M Y') }}
                                 </time>
                             </flux:table.cell>

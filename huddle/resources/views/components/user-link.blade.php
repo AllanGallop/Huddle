@@ -1,7 +1,7 @@
 @props(['user'])
 
 @if ($user && $user->exists && $user->id)
-    <flux:link :href="route('users.show', $user)" wire:navigate {{ $attributes->class('font-medium text-huddle-primary hover:underline') }}>
+    <flux:link :href="route('users.show', $user)" wire:navigate {{ $attributes->class('font-medium text-huddle-primary') }}>
         {{ $user->name }}
     </flux:link>
 @else

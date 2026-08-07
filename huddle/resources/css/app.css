@@ -125,6 +125,11 @@ select:focus[data-flux-control] {
     @apply outline-hidden ring-2 ring-huddle-primary ring-offset-2 ring-offset-zinc-100 dark:ring-offset-zinc-900;
 }
 
+/* Non-Flux brand links: scale + opacity hover instead of underline */
+a.text-huddle-primary:not([data-flux-link]) {
+    @apply inline-flex items-center no-underline transition duration-150 ease-out will-change-transform hover:scale-[1.03] hover:opacity-75 hover:no-underline;
+}
+
 /* Flux table: override first:ps-0 / last:pe-0 for even column padding */
 [data-flux-cell]:first-child,
 [data-flux-column]:first-child {
@@ -134,6 +139,11 @@ select:focus[data-flux-control] {
 [data-flux-cell]:last-child,
 [data-flux-column]:last-child {
     padding-inline-end: 0.75rem !important;
+}
+
+/* Status accent bar on list rows — keep content clear of the border */
+[data-flux-cell].border-s-4:first-child {
+    padding-inline-start: 0.875rem !important;
 }
 
 .material-symbols-outlined {
@@ -173,7 +183,7 @@ select:focus[data-flux-control] {
 }
 
 .wiki-content a {
-    @apply font-medium text-huddle-primary underline-offset-2 hover:underline;
+    @apply inline-block font-medium text-huddle-primary no-underline transition duration-150 ease-out will-change-transform hover:scale-[1.03] hover:opacity-75 hover:no-underline;
 }
 
 .wiki-content code {

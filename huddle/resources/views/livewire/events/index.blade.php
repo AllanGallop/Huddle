@@ -1,7 +1,12 @@
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-            <flux:heading size="xl">{{ __('Events') }}</flux:heading>
+            <flux:heading size="xl" class="inline-flex items-center gap-2.5">
+                <span class="flex size-10 items-center justify-center rounded-xl bg-huddle-primary/15 text-huddle-primary">
+                    <x-material-icon name="event" class="text-[1.5rem]" />
+                </span>
+                {{ __('Events') }}
+            </flux:heading>
             <flux:text class="mt-1">{{ __('Community gatherings, workshops, and meetups.') }}</flux:text>
         </div>
         <flux:button variant="primary" wire:click="openCreateModal">
@@ -12,7 +17,7 @@
         </flux:button>
     </div>
 
-    <div class="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900 sm:p-5">
+    <div class="rounded-xl border border-zinc-200 border-s-4 border-s-huddle-comp bg-white p-4 dark:border-zinc-700 dark:border-s-huddle-comp dark:bg-zinc-900 sm:p-5">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <flux:heading size="sm" class="inline-flex items-center gap-2">
                 <x-material-icon name="filter_list" class="text-[1.125rem] text-huddle-primary" />
@@ -99,7 +104,7 @@
         @else
             <flux:table>
                 <flux:table.columns>
-                    <flux:table.column sortable :sorted="$sortBy === 'name'" :direction="$sortBy === 'name' ? $sortDirection : null" wire:click="sort('name')" class="min-w-[12rem]">
+                    <flux:table.column sortable :sorted="$sortBy === 'name'" :direction="$sortBy === 'name' ? $sortDirection : null" wire:click="sort('name')" class="min-w-[12rem] border-s-4 border-s-transparent">
                         {{ __('Event') }}
                     </flux:table.column>
                     <flux:table.column sortable :sorted="$sortBy === 'start_time'" :direction="$sortBy === 'start_time' ? $sortDirection : null" wire:click="sort('start_time')" class="hidden md:table-cell">
@@ -116,23 +121,42 @@
 
                 <flux:table.rows>
                     @foreach ($this->events as $event)
+                        @php
+                            $statusAccent = match ($event->event_status) {
+                                'published' => 'border-s-huddle-comp',
+                                'cancelled' => 'border-s-huddle-accent',
+                                'archived' => 'border-s-zinc-300 dark:border-s-zinc-600',
+                                default => 'border-s-zinc-300 dark:border-s-zinc-600',
+                            };
+                        @endphp
                         <flux:table.row
                             wire:key="event-{{ $event->id }}"
                             class="cursor-pointer transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60"
                             wire:click="viewEvent({{ $event->id }})"
                         >
-                            <flux:table.cell variant="strong" class="max-w-md">
+                            <flux:table.cell variant="strong" @class(['max-w-md border-s-4 ps-3', $statusAccent])>
                                 <div class="min-w-0">
-                                    <p class="flex items-center gap-2 truncate font-medium text-zinc-900 dark:text-white">
-                                        <x-material-icon name="event" class="shrink-0 text-[1.125rem] text-huddle-primary" />
-                                        {{ $event->name }}
-                                    </p>
-                                    <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
-                                        <span class="inline-flex items-center gap-1">
-                                            <x-material-icon name="chat_bubble_outline" class="text-[0.875rem]" />
+                                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                        <p class="flex min-w-0 max-w-full items-center gap-1.5 font-medium text-zinc-900 dark:text-white">
+                                            <x-material-icon name="event" class="shrink-0 text-[1.125rem] text-huddle-primary" />
+                                            <span class="truncate">{{ $event->name }}</span>
+                                        </p>
+                                        @if ($event->volunteer_required)
+                                            <span
+                                                class="inline-flex items-center gap-1 rounded-full bg-huddle-accent/15 px-2 py-0.5 text-xs font-medium text-huddle-accent"
+                                                title="{{ __('Volunteers needed') }}"
+                                            >
+                                                <x-material-icon name="volunteer_activism" class="text-[0.875rem]" />
+                                                {{ __('Volunteers') }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
+                                        <span class="inline-flex items-center gap-1 text-huddle-primary" title="{{ __('Comments') }}">
+                                            <x-material-icon name="chat_bubble" class="text-[0.875rem]" />
                                             {{ $event->comments_count }}
                                         </span>
-                                        <span class="inline-flex items-center gap-1">
+                                        <span class="inline-flex items-center gap-1 text-huddle-accent" title="{{ __('Volunteers') }}">
                                             <x-material-icon name="group" class="text-[0.875rem]" />
                                             {{ $event->volunteers_count }}
                                         </span>
@@ -142,33 +166,35 @@
                                             'text-huddle-primary' => $event->isUpcoming(),
                                             'text-zinc-400' => $event->isPast(),
                                         ])>
-
-                                        @if ($event->volunteer_required)
-                                            <span class="inline-flex items-center gap-1 bg-huddle-accent/10 text-huddle-accent rounded-full px-2.5 py-0.5 text-xs font-medium">
-                                                <x-material-icon name="volunteer_activism" class="text-[0.875rem]" />
-                                                {{ __('Volunteers needed') }}
-                                            </span>
-                                        @endif
+                                            @if ($event->isOngoing())
+                                                {{ __('Ongoing') }}
+                                            @elseif ($event->isUpcoming())
+                                                {{ __('Upcoming') }}
+                                            @else
+                                                {{ __('Past') }}
+                                            @endif
+                                        </span>
+                                        <span class="inline-flex items-center gap-1 text-zinc-400 md:hidden">
+                                            <x-material-icon name="schedule" class="text-[0.875rem]" />
+                                            {{ $event->start_time->format('j M Y, H:i') }}
                                         </span>
                                     </div>
-
-                                    <p class="mt-1 flex items-center gap-1 text-xs text-zinc-400 md:hidden">
-                                        <x-material-icon name="schedule" class="text-[0.875rem]" />
-                                        {{ $event->start_time->format('j M Y, H:i') }}
-                                    </p>
                                 </div>
                             </flux:table.cell>
 
                             <flux:table.cell class="hidden whitespace-nowrap md:table-cell">
                                 <div class="text-sm">
-                                    <p>{{ $event->start_time->format('j M Y') }}</p>
-                                    <p class="text-xs text-zinc-500">{{ $event->start_time->format('H:i') }} – {{ $event->end_time->format('H:i') }}</p>
+                                    <p class="inline-flex items-center gap-1">
+                                        <x-material-icon name="schedule" class="text-[1rem] text-huddle-alt" />
+                                        {{ $event->start_time->format('j M Y') }}
+                                    </p>
+                                    <p class="ms-5 text-xs text-zinc-500">{{ $event->start_time->format('H:i') }} – {{ $event->end_time->format('H:i') }}</p>
                                 </div>
                             </flux:table.cell>
 
                             <flux:table.cell class="hidden max-w-[10rem] truncate lg:table-cell">
                                 <span class="inline-flex items-center gap-1.5">
-                                    <x-material-icon name="place" class="text-[1rem] text-zinc-400" />
+                                    <x-material-icon name="place" class="text-[1rem] text-huddle-accent" />
                                     {{ $event->location }}
                                 </span>
                             </flux:table.cell>

@@ -13,7 +13,7 @@
     <div class="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p class="text-sm text-zinc-600 dark:text-zinc-300">
             {{ __('We use essential cookies for sign-in and session management.') }}
-            <a href="{{ route('privacy.show') }}" class="font-medium text-huddle-primary underline-offset-2 hover:underline" wire:navigate>
+            <a href="{{ route('privacy.show') }}" class="font-medium text-huddle-primary" wire:navigate>
                 {{ __('Privacy policy') }}
             </a>
         </p>
