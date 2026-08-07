@@ -50,8 +50,8 @@ class InstallerTest extends TestCase
             'email' => 'admin@huddle.skullfire.co.uk',
             'password' => Hash::make('password'),
         ]);
-        $legacy->role_id = $adminRoleId;
         $legacy->save();
+        $legacy->roles()->sync([$adminRoleId]);
 
         $result = $installer->createAdmin('New Admin', 'admin@example.com', 'secure-password-12');
 

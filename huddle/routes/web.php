@@ -49,7 +49,7 @@ Route::livewire('members', MembersIndex::class)->name('members.index');
 
 Route::livewire('forms', FormsIndex::class)->name('forms.index');
 
-Route::middleware(['mentor'])->prefix('forms/manage')->name('forms.manage.')->group(function () {
+Route::middleware(['can:forms.manage'])->prefix('forms/manage')->name('forms.manage.')->group(function () {
     Route::livewire('/', FormsManageIndex::class)->name('index');
     Route::livewire('/create', FormsManageEdit::class)->name('create');
     Route::livewire('/{form}/edit', FormsManageEdit::class)->name('edit');
@@ -70,11 +70,13 @@ Route::livewire('reports', ReportsIndex::class)->name('reports.index');
 
 Route::livewire('admin', AdminIndex::class)->middleware(['admin'])->name('admin.index');
 
-Route::livewire('mentors', MentorsIndex::class)->middleware(['mentor'])->name('mentors.index');
+Route::livewire('mentors', MentorsIndex::class)->middleware(['can:accreditations.assign_via_exam'])->name('mentors.index');
+
+Route::livewire('accreditations', \App\Livewire\Accreditations\Index::class)->name('accreditations.index');
 
 Route::livewire('users/{user}', UsersShow::class)->name('users.show');
 
-Route::middleware(['mentor'])->group(function () {
+Route::middleware(['can:wiki.edit'])->group(function () {
     Route::livewire('wiki/edit/{path?}', WikiEdit::class)
         ->where('path', '.*')
         ->name('wiki.edit');

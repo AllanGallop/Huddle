@@ -81,7 +81,7 @@ class Profile extends Component
     public function membership()
     {
         return Auth::user()->load([
-            'role',
+            'roles',
             'flags',
             'membershipRenewalAssignments' => fn ($query) => $query
                 ->with('membershipRenewal')

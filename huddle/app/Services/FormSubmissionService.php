@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AccreditationAssignment;
 use App\Models\Form;
 use App\Models\FormQuestion;
 use App\Models\FormSubmission;
@@ -45,6 +46,16 @@ class FormSubmissionService
                     'form_question_id' => $question->id,
                     'value' => $this->normalizeAnswer($question, $answers[$question->id]),
                 ]);
+            }
+
+            if ($form->isExam() && $passed === true && $form->accreditation_id) {
+                AccreditationAssignment::query()->firstOrCreate(
+                    [
+                        'user_id' => $user->id,
+                        'accreditation_id' => $form->accreditation_id,
+                    ],
+                    ['is_active' => true],
+                );
             }
 
             return $submission->load('answers.question');

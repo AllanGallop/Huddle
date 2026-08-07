@@ -33,9 +33,12 @@
                     <flux:sidebar.item icon="book-open" :href="route('wiki.show')" :current="request()->routeIs('wiki.*')" wire:navigate>
                         {{ __('Wiki') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="check-badge" :href="route('accreditations.index')" :current="request()->routeIs('accreditations.*')" wire:navigate>
+                        {{ __('Accreditations') }}
+                    </flux:sidebar.item>
                     @if (auth()->user()->canAccessMentors())
                         <flux:sidebar.item icon="academic-cap" :href="route('mentors.index')" :current="request()->routeIs('mentors.*')" wire:navigate>
-                            {{ __('Mentors') }}
+                            {{ __('Manage accreditations') }}
                         </flux:sidebar.item>
                     @endif
                     @if (auth()->user()->isAdmin())

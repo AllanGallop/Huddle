@@ -7,6 +7,7 @@ use App\Concerns\ProfileValidationRules;
 use App\Models\MembershipRenewal;
 use App\Models\MembershipRenewalAssignment;
 use App\Models\OrganizationSetting;
+use App\Models\Permission;
 use App\Models\ProjectCategory;
 use App\Models\Role;
 use App\Models\User;
@@ -14,11 +15,13 @@ use App\Models\UserFlags;
 use App\Notifications\UserInvitationNotification;
 use App\Services\ApplicationUpdateService;
 use App\Services\BrandingService;
+use App\Services\RoleService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -41,7 +44,8 @@ class Index extends Component
 
     public string $email = '';
 
-    public ?int $role_id = null;
+    /** @var array<int> */
+    public array $assignedRoleIds = [];
 
     public string $password = '';
 
@@ -86,6 +90,17 @@ class Index extends Component
     /** @var array<int> */
     public array $assignedFlagIds = [];
 
+    public bool $showRoleModal = false;
+
+    public ?int $editingRoleId = null;
+
+    public string $role_name = '';
+
+    public string $role_description = '';
+
+    /** @var array<int> */
+    public array $assignedPermissionIds = [];
+
     public string $membershipTab = 'periods';
 
     public bool $showRenewalModal = false;
@@ -129,7 +144,7 @@ class Index extends Component
 
     public function setTab(string $tab): void
     {
-        if (in_array($tab, ['users', 'tags', 'categories', 'membership', 'bank', 'branding', 'updates'], true)) {
+        if (in_array($tab, ['users', 'roles', 'tags', 'categories', 'membership', 'bank', 'branding', 'updates'], true)) {
             $this->activeTab = $tab;
         }
     }
@@ -146,7 +161,7 @@ class Index extends Component
     {
         return User::query()
             ->with([
-                'role',
+                'roles',
                 'flags',
                 'membershipRenewalAssignments.membershipRenewal',
             ])
@@ -193,26 +208,37 @@ class Index extends Component
     #[Computed]
     public function roles()
     {
-        return Role::query()->orderBy('id')->get();
+        return Role::query()
+            ->withCount(['users', 'permissions'])
+            ->with('permissions')
+            ->orderBy('name')
+            ->get();
+    }
+
+    #[Computed]
+    public function permissions()
+    {
+        return Permission::query()->orderBy('name')->get();
     }
 
     public function openCreateUserModal(string $mode = 'add'): void
     {
         $this->resetUserForm();
         $this->userModalMode = $mode === 'invite' ? 'invite' : 'add';
-        $this->role_id = Role::query()->where('name', 'member')->value('id') ?? 2;
+        $memberRoleId = Role::query()->where('name', 'member')->value('id');
+        $this->assignedRoleIds = $memberRoleId ? [(int) $memberRoleId] : [];
         $this->showUserModal = true;
     }
 
     public function openEditUserModal(int $userId): void
     {
-        $user = User::query()->findOrFail($userId);
+        $user = User::query()->with(['roles', 'flags'])->findOrFail($userId);
 
         $this->editingUserId = $user->id;
         $this->userModalMode = 'edit';
         $this->name = $user->name;
         $this->email = $user->email;
-        $this->role_id = $user->role_id;
+        $this->assignedRoleIds = $user->roles->pluck('id')->map(fn ($id) => (int) $id)->all();
         $this->password = '';
         $this->password_confirmation = '';
         $this->assignedFlagIds = $user->flags->pluck('id')->map(fn ($id) => (int) $id)->all();
@@ -247,7 +273,8 @@ class Index extends Component
     {
         $validated = $this->validate([
             ...$this->profileRules(),
-            'role_id' => ['required', 'exists:roles,id'],
+            'assignedRoleIds' => ['required', 'array', 'min:1'],
+            'assignedRoleIds.*' => ['integer', 'exists:roles,id'],
             'password' => $this->passwordRules(),
         ]);
 
@@ -256,8 +283,8 @@ class Index extends Component
             'email' => $validated['email'],
             'password' => $validated['password'],
         ]);
-        $user->role_id = $validated['role_id'];
         $user->save();
+        $user->roles()->sync($validated['assignedRoleIds']);
 
         $this->syncUserFlags($user);
 
@@ -270,7 +297,8 @@ class Index extends Component
     {
         $validated = $this->validate([
             ...$this->profileRules(),
-            'role_id' => ['required', 'exists:roles,id'],
+            'assignedRoleIds' => ['required', 'array', 'min:1'],
+            'assignedRoleIds.*' => ['integer', 'exists:roles,id'],
         ]);
 
         $user = new User([
@@ -278,8 +306,8 @@ class Index extends Component
             'email' => $validated['email'],
             'password' => Hash::make(Str::password(32)),
         ]);
-        $user->role_id = $validated['role_id'];
         $user->save();
+        $user->roles()->sync($validated['assignedRoleIds']);
 
         $this->sendInvitationEmail($user);
         $this->syncUserFlags($user);
@@ -320,7 +348,8 @@ class Index extends Component
 
         $rules = [
             ...$this->profileRules($user->id),
-            'role_id' => ['required', 'exists:roles,id'],
+            'assignedRoleIds' => ['required', 'array', 'min:1'],
+            'assignedRoleIds.*' => ['integer', 'exists:roles,id'],
         ];
 
         if ($this->password !== '') {
@@ -329,12 +358,25 @@ class Index extends Component
 
         $validated = $this->validate($rules);
 
+        $adminRoleId = Role::query()->where('name', 'admin')->value('id');
+        $wasAdmin = $user->isAdmin();
+        $willBeAdmin = $adminRoleId && in_array((int) $adminRoleId, array_map('intval', $validated['assignedRoleIds']), true);
+
+        if ($wasAdmin && ! $willBeAdmin) {
+            $adminCount = User::query()->whereHas('roles', fn ($query) => $query->where('name', 'admin'))->count();
+            if ($adminCount <= 1) {
+                $this->addError('assignedRoleIds', __('You cannot remove the only admin role assignment.'));
+
+                return;
+            }
+        }
+
         $user->fill([
             'name' => $validated['name'],
             'email' => $validated['email'],
         ]);
-        $user->role_id = $validated['role_id'];
         $user->save();
+        $user->roles()->sync($validated['assignedRoleIds']);
 
         if (! empty($validated['password'] ?? null)) {
             $user->update(['password' => $validated['password']]);
@@ -345,6 +387,95 @@ class Index extends Component
         $this->closeUserModal();
         unset($this->users);
         session()->flash('status', __('User updated successfully.'));
+    }
+
+    public function openCreateRoleModal(): void
+    {
+        $this->resetRoleForm();
+        $this->showRoleModal = true;
+    }
+
+    public function openEditRoleModal(int $roleId): void
+    {
+        $role = Role::query()->with('permissions')->findOrFail($roleId);
+
+        $this->editingRoleId = $role->id;
+        $this->role_name = $role->name;
+        $this->role_description = $role->description ?? '';
+        $this->assignedPermissionIds = $role->permissions->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $this->showRoleModal = true;
+    }
+
+    public function closeRoleModal(): void
+    {
+        $this->showRoleModal = false;
+        $this->resetRoleForm();
+        $this->resetValidation();
+    }
+
+    public function saveRole(): void
+    {
+        $validated = $this->validate([
+            'role_name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('roles', 'name')->ignore($this->editingRoleId),
+            ],
+            'role_description' => ['nullable', 'string', 'max:1000'],
+            'assignedPermissionIds' => ['array'],
+            'assignedPermissionIds.*' => ['integer', 'exists:permissions,id'],
+        ]);
+
+        try {
+            if ($this->editingRoleId) {
+                RoleService::updateRole(
+                    $this->editingRoleId,
+                    $validated['role_name'],
+                    $validated['role_description'] ?? null,
+                    $validated['assignedPermissionIds'] ?? [],
+                );
+                session()->flash('status', __('Role updated successfully.'));
+            } else {
+                RoleService::createRole(
+                    $validated['role_name'],
+                    $validated['role_description'] ?? null,
+                    $validated['assignedPermissionIds'] ?? [],
+                );
+                session()->flash('status', __('Role created successfully.'));
+            }
+        } catch (ValidationException $e) {
+            throw $e;
+        }
+
+        $this->closeRoleModal();
+        unset($this->roles, $this->users);
+    }
+
+    public function deleteRole(int $roleId): void
+    {
+        try {
+            RoleService::deleteRole($roleId);
+            session()->flash('status', __('Role deleted successfully.'));
+        } catch (ValidationException $e) {
+            $message = $e->validator->errors()->first() ?: $e->getMessage();
+            $this->addError('role', $message);
+
+            return;
+        }
+
+        unset($this->roles, $this->users);
+    }
+
+    protected function resetRoleForm(): void
+    {
+        $this->reset([
+            'editingRoleId',
+            'role_name',
+            'role_description',
+            'assignedPermissionIds',
+        ]);
+        $this->assignedPermissionIds = [];
     }
 
     public function openCreateTagModal(): void
@@ -658,7 +789,7 @@ class Index extends Component
             return;
         }
 
-        if ($user->isAdmin() && User::query()->whereHas('role', fn ($query) => $query->where('name', 'admin'))->count() <= 1) {
+        if ($user->isAdmin() && User::query()->whereHas('roles', fn ($query) => $query->where('name', 'admin'))->count() <= 1) {
             $this->addError('user', __('You cannot remove the only admin account.'));
 
             return;
@@ -797,11 +928,12 @@ class Index extends Component
             'editingUserId',
             'name',
             'email',
-            'role_id',
+            'assignedRoleIds',
             'password',
             'password_confirmation',
             'assignedFlagIds',
         ]);
+        $this->assignedRoleIds = [];
         $this->assignedFlagIds = [];
         $this->userModalMode = 'add';
     }

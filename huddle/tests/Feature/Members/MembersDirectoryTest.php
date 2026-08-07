@@ -23,15 +23,13 @@ class MembersDirectoryTest extends TestCase
 
     public function test_authenticated_user_can_browse_and_filter_members(): void
     {
-        $viewer = User::factory()->create(['role_id' => 2]);
+        $viewer = User::factory()->create();
 
         $activeMember = User::factory()->create([
-            'role_id' => 2,
             'name' => 'Active Alex',
         ]);
 
-        $expiredMember = User::factory()->create([
-            'role_id' => 1,
+        $expiredMember = User::factory()->admin()->create([
             'name' => 'Expired Erin',
         ]);
 

@@ -203,11 +203,11 @@ class Installer
                 'email' => $email,
                 'password' => Hash::make($password),
             ]);
-            $admin->role_id = $adminRoleId;
             $admin->email_verified_at = now();
             $admin->privacy_policy_accepted_at = now();
             $admin->privacy_policy_version = config('gdpr.policy_version');
             $admin->save();
+            $admin->roles()->sync([$adminRoleId]);
 
             User::query()
                 ->where('email', 'admin@huddle.skullfire.co.uk')
@@ -245,7 +245,7 @@ class Installer
                 $this->migrationsTableExists() ? 'Migrations table present' : 'Migrations missing',
             );
 
-            $adminCount = User::query()->whereHas('role', fn ($query) => $query->where('name', 'admin'))->count();
+            $adminCount = User::query()->whereHas('roles', fn ($query) => $query->where('name', 'admin'))->count();
             $checks[] = $this->check(
                 'Administrator account',
                 $adminCount >= 1,
@@ -295,7 +295,7 @@ class Installer
         try {
             $this->bootstrapLaravel();
 
-            return User::query()->whereHas('role', fn ($query) => $query->where('name', 'admin'))->exists();
+            return User::query()->whereHas('roles', fn ($query) => $query->where('name', 'admin'))->exists();
         } catch (Throwable) {
             return false;
         }

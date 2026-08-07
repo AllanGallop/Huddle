@@ -4,7 +4,6 @@ namespace Tests\Feature\Mentors;
 
 use App\Models\Accreditation;
 use App\Models\User;
-use App\Models\UserFlags;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -13,9 +12,9 @@ class MentorsAccessTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_member_without_mentor_tag_cannot_access_mentors(): void
+    public function test_member_without_permission_cannot_access_mentors(): void
     {
-        $user = User::factory()->create(['role_id' => 2]);
+        $user = User::factory()->create();
 
         $this->actingAs($user)
             ->get(route('mentors.index'))
@@ -24,22 +23,16 @@ class MentorsAccessTest extends TestCase
 
     public function test_admin_can_access_mentors(): void
     {
-        $admin = User::factory()->create(['role_id' => 1]);
+        $admin = User::factory()->admin()->create();
 
         $this->actingAs($admin)
             ->get(route('mentors.index'))
             ->assertOk();
     }
 
-    public function test_mentor_tag_user_can_access_mentors(): void
+    public function test_mentor_role_user_can_access_mentors(): void
     {
-        $mentorFlag = UserFlags::firstOrCreate(
-            ['name' => 'Mentor'],
-            ['description' => 'Accreditation Mentor'],
-        );
-
-        $user = User::factory()->create(['role_id' => 2]);
-        $user->flags()->attach($mentorFlag);
+        $user = User::factory()->withRole('Mentor')->create();
 
         $this->actingAs($user)
             ->get(route('mentors.index'))
@@ -48,15 +41,8 @@ class MentorsAccessTest extends TestCase
 
     public function test_mentor_can_create_accreditation_and_assign_to_user(): void
     {
-        $mentorFlag = UserFlags::firstOrCreate(
-            ['name' => 'Mentor'],
-            ['description' => 'Accreditation Mentor'],
-        );
-
-        $mentor = User::factory()->create(['role_id' => 2]);
-        $mentor->flags()->attach($mentorFlag);
-
-        $member = User::factory()->create(['role_id' => 2]);
+        $mentor = User::factory()->withRole('Mentor')->create();
+        $member = User::factory()->create();
 
         $this->actingAs($mentor);
 
@@ -82,6 +68,30 @@ class MentorsAccessTest extends TestCase
             'user_id' => $member->id,
             'accreditation_id' => $accreditation->id,
             'is_active' => true,
+        ]);
+    }
+
+    public function test_admin_can_assign_accreditation_mentors(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $mentorContact = User::factory()->create();
+        $accreditation = Accreditation::query()->create([
+            'name' => 'Food Hygiene',
+            'description' => 'Kitchen safety',
+            'is_active' => true,
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(\App\Livewire\Mentors\Index::class)
+            ->call('setTab', 'mentors')
+            ->call('openEditMentorsModal', $accreditation->id)
+            ->set('assignedMentorIds', [$mentorContact->id])
+            ->call('saveMentors')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('accreditation_mentors', [
+            'accreditation_id' => $accreditation->id,
+            'user_id' => $mentorContact->id,
         ]);
     }
 }

@@ -97,7 +97,7 @@
                                         'bg-huddle-primary/15 text-huddle-primary' => $member->isAdmin(),
                                         'bg-zinc-500/15 text-zinc-600 dark:text-zinc-300' => ! $member->isAdmin(),
                                     ])>
-                                        {{ str($member->role?->name ?? 'member')->headline() }}
+                                        {{ $member->roles->pluck('name')->map(fn ($name) => str($name)->headline())->join(', ') ?: __('Member') }}
                                     </span>
                                 </td>
                                 <td class="hidden px-5 py-3 md:table-cell">

@@ -45,7 +45,7 @@ class Index extends Component
     {
         $query = User::query()
             ->with([
-                'role',
+                'roles',
                 'flags',
                 'membershipRenewalAssignments.membershipRenewal',
             ]);

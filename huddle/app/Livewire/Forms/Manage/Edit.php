@@ -2,13 +2,16 @@
 
 namespace App\Livewire\Forms\Manage;
 
+use App\Models\Accreditation;
 use App\Models\Form;
 use App\Models\FormQuestion;
 use App\Models\FormQuestionOption;
+use App\Models\Permission;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -26,6 +29,8 @@ class Edit extends Component
 
     public ?int $pass_percentage = 70;
 
+    public ?int $accreditation_id = null;
+
     /** @var array<int, array<string, mixed>> */
     public array $questionDrafts = [];
 
@@ -40,6 +45,7 @@ class Edit extends Component
             $this->type = $form->type;
             $this->is_published = $form->is_published;
             $this->pass_percentage = $form->pass_percentage ?? 70;
+            $this->accreditation_id = $form->accreditation_id;
             $this->questionDrafts = $form->questions->map(fn (FormQuestion $question) => [
                 'key' => (string) Str::uuid(),
                 'id' => $question->id,
@@ -68,9 +74,25 @@ class Edit extends Component
     {
         if ($this->type === Form::TYPE_SURVEY) {
             $this->pass_percentage = null;
+            $this->accreditation_id = null;
         } elseif ($this->pass_percentage === null) {
             $this->pass_percentage = 70;
         }
+    }
+
+    #[Computed]
+    public function canLinkAccreditation(): bool
+    {
+        return Auth::user()->can(Permission::ACCREDITATIONS_ASSIGN_VIA_EXAM);
+    }
+
+    #[Computed]
+    public function accreditations()
+    {
+        return Accreditation::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
     }
 
     public function addQuestion(string $type): void
@@ -169,6 +191,11 @@ class Edit extends Component
                 'min:1',
                 'max:100',
             ],
+            'accreditation_id' => [
+                'nullable',
+                'exists:accreditations,id',
+                Rule::prohibitedIf($this->type !== Form::TYPE_EXAM),
+            ],
             'questionDrafts' => ['required', 'array', 'min:1'],
             'questionDrafts.*.type' => ['required', Rule::in([FormQuestion::TYPE_YES_NO, FormQuestion::TYPE_MULTIPLE_CHOICE])],
             'questionDrafts.*.body' => ['required', 'string', 'max:2000'],
@@ -178,6 +205,12 @@ class Edit extends Component
             'questionDrafts.*.options.*.label' => ['required_with:questionDrafts.*.options', 'string', 'max:500'],
             'questionDrafts.*.options.*.is_correct' => ['boolean'],
         ]);
+
+        if ($this->type === Form::TYPE_EXAM && filled($this->accreditation_id) && ! $this->canLinkAccreditation) {
+            $this->addError('accreditation_id', __('You do not have permission to link exams to accreditations.'));
+
+            return;
+        }
 
         $this->validateQuestionDrafts();
 
@@ -191,6 +224,12 @@ class Edit extends Component
                     ? $validated['pass_percentage']
                     : null,
             ];
+
+            if ($this->canLinkAccreditation) {
+                $data['accreditation_id'] = $validated['type'] === Form::TYPE_EXAM
+                    ? ($validated['accreditation_id'] ?? null)
+                    : null;
+            }
 
             if ($this->form) {
                 $this->form->update($data);

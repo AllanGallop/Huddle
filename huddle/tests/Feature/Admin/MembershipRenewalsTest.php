@@ -16,8 +16,8 @@ class MembershipRenewalsTest extends TestCase
 
     public function test_admin_can_create_membership_period_and_assign_to_user(): void
     {
-        $admin = User::factory()->create(['role_id' => 1]);
-        $member = User::factory()->create(['role_id' => 2]);
+        $admin = User::factory()->admin()->create();
+        $member = User::factory()->create();
 
         Livewire::actingAs($admin)
             ->test(Index::class)
@@ -50,7 +50,7 @@ class MembershipRenewalsTest extends TestCase
 
     public function test_membership_status_reflects_latest_period(): void
     {
-        $member = User::factory()->create(['role_id' => 2]);
+        $member = User::factory()->create();
 
         $past = MembershipRenewal::create([
             'name' => '2024',

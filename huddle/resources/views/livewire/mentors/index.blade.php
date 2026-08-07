@@ -42,6 +42,22 @@
                 {{ __('Assignments') }}
             </span>
         </button>
+        @if ($this->isAdmin)
+            <button
+                type="button"
+                wire:click="setTab('mentors')"
+                @class([
+                    'flex-1 rounded-md px-4 py-2 text-sm font-medium transition sm:flex-none',
+                    'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $activeTab === 'mentors',
+                    'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $activeTab !== 'mentors',
+                ])
+            >
+                <span class="inline-flex items-center justify-center gap-2">
+                    <x-material-icon name="supervisor_account" class="text-[1.125rem]" />
+                    {{ __('Mentors') }}
+                </span>
+            </button>
+        @endif
     </nav>
 
     @if ($activeTab === 'accreditations')
@@ -198,6 +214,44 @@
         </div>
     @endif
 
+    @if ($activeTab === 'mentors' && $this->isAdmin)
+        <div class="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+            <div class="border-b border-zinc-200 p-4 dark:border-zinc-700 sm:p-5">
+                <flux:heading size="lg">{{ __('Accreditation mentors') }}</flux:heading>
+                <flux:text class="mt-1 text-sm">{{ __('Choose who members should ask about each accreditation.') }}</flux:text>
+            </div>
+
+            @if ($this->accreditations->isEmpty())
+                <div class="px-5 py-12 text-center">
+                    <flux:text>{{ __('Create an accreditation first, then assign mentors to it.') }}</flux:text>
+                </div>
+            @else
+                <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                    @foreach ($this->accreditations as $accreditation)
+                        <div wire:key="mentor-row-{{ $accreditation->id }}" class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="min-w-0">
+                                <p class="font-medium text-zinc-900 dark:text-white">{{ $accreditation->name }}</p>
+                                <p class="mt-1 text-sm text-zinc-500">
+                                    @if ($accreditation->mentors->isEmpty())
+                                        {{ __('No mentors assigned') }}
+                                    @else
+                                        {{ $accreditation->mentors->pluck('name')->join(', ') }}
+                                    @endif
+                                </p>
+                            </div>
+                            <flux:button size="sm" variant="ghost" wire:click="openEditMentorsModal({{ $accreditation->id }})">
+                                <span class="inline-flex items-center gap-1.5">
+                                    <x-material-icon name="edit" class="text-[1rem]" />
+                                    {{ __('Edit mentors') }}
+                                </span>
+                            </flux:button>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    @endif
+
     <flux:modal wire:model="showAccreditationModal" class="md:max-w-lg">
         <form wire:submit="saveAccreditation" class="space-y-6">
             <div>
@@ -220,6 +274,34 @@
         </form>
     </flux:modal>
 
+    <flux:modal wire:model="showMentorModal" class="md:max-w-lg">
+        <form wire:submit="saveMentors" class="space-y-6">
+            <div>
+                <flux:heading size="lg">{{ __('Edit mentors') }}</flux:heading>
+                <flux:text class="mt-1">{{ __('Select members who can advise others about this accreditation.') }}</flux:text>
+            </div>
+
+            <div class="max-h-72 space-y-2 overflow-y-auto">
+                @foreach ($this->users as $user)
+                    <label class="flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700">
+                        <input
+                            type="checkbox"
+                            wire:model="assignedMentorIds"
+                            value="{{ $user->id }}"
+                            class="rounded border-zinc-300 text-huddle-primary focus:ring-huddle-primary"
+                        >
+                        <span>{{ $user->name }} <span class="text-zinc-500">({{ $user->email }})</span></span>
+                    </label>
+                @endforeach
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" variant="ghost" wire:click="closeMentorModal">{{ __('Cancel') }}</flux:button>
+                <flux:button type="submit" variant="primary">{{ __('Save mentors') }}</flux:button>
+            </div>
+        </form>
+    </flux:modal>
+
     <flux:modal wire:model="showAssignmentModal" class="md:max-w-lg">
         <form wire:submit="saveAssignment" class="space-y-6">
             <div>
@@ -229,12 +311,14 @@
                 <flux:text class="mt-1">{{ __('Link a member to an accreditation type.') }}</flux:text>
             </div>
 
-            <flux:select wire:model="assignment_user_id" :label="__('Member')" required>
-                <flux:select.option value="">{{ __('Select a member…') }}</flux:select.option>
-                @foreach ($this->users as $user)
-                    <flux:select.option :value="$user->id">{{ $user->name }} ({{ $user->email }})</flux:select.option>
-                @endforeach
-            </flux:select>
+            <x-member-select
+                :users="$this->users"
+                :selected-id="$assignment_user_id"
+                wire-model="assignment_user_id"
+                :label="__('Member')"
+                :placeholder="__('Select a member…')"
+                required
+            />
 
             <flux:select wire:model="assignment_accreditation_id" :label="__('Accreditation')" required>
                 <flux:select.option value="">{{ __('Select an accreditation…') }}</flux:select.option>

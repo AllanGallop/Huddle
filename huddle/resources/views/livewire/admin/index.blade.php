@@ -19,6 +19,12 @@
         </div>
     @enderror
 
+    @error('role')
+        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
+            {{ $message }}
+        </div>
+    @enderror
+
     @error('update')
         <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
             {{ $message }}
@@ -38,6 +44,20 @@
             <span class="inline-flex items-center justify-center gap-2">
                 <x-material-icon name="group" class="text-[1.125rem]" />
                 {{ __('Users') }}
+            </span>
+        </button>
+        <button
+            type="button"
+            wire:click="setTab('roles')"
+            @class([
+                'flex-1 rounded-md px-4 py-2 text-sm font-medium transition sm:flex-none',
+                'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $activeTab === 'roles',
+                'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $activeTab !== 'roles',
+            ])
+        >
+            <span class="inline-flex items-center justify-center gap-2">
+                <x-material-icon name="shield_person" class="text-[1.125rem]" />
+                {{ __('Roles') }}
             </span>
         </button>
         <button
@@ -155,7 +175,7 @@
                         <tr>
                             <th class="px-5 py-3">{{ __('Name') }}</th>
                             <th class="px-5 py-3">{{ __('Email') }}</th>
-                            <th class="px-5 py-3">{{ __('Role') }}</th>
+                            <th class="px-5 py-3">{{ __('Roles') }}</th>
                             <th class="px-5 py-3 hidden lg:table-cell">{{ __('Tags') }}</th>
                             <th class="px-5 py-3 hidden sm:table-cell">{{ __('Joined') }}</th>
                             <th class="px-5 py-3 text-end">{{ __('Actions') }}</th>
@@ -175,13 +195,20 @@
                                 </td>
                                 <td class="px-5 py-3 text-zinc-600 dark:text-zinc-300">{{ $user->email }}</td>
                                 <td class="px-5 py-3">
-                                    <span @class([
-                                        'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
-                                        'bg-huddle-primary/15 text-huddle-primary' => $user->isAdmin(),
-                                        'bg-zinc-500/15 text-zinc-600 dark:text-zinc-300' => ! $user->isAdmin(),
-                                    ])>
-                                        {{ str($user->role?->name ?? 'member')->headline() }}
-                                    </span>
+                                    <div class="flex flex-wrap gap-1">
+                                        @forelse ($user->roles as $role)
+                                            <span @class([
+                                                'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
+                                                'bg-huddle-primary/15 text-huddle-primary' => strcasecmp($role->name, 'admin') === 0,
+                                                'bg-huddle-comp/20 text-green-800 dark:text-huddle-comp' => strcasecmp($role->name, 'Mentor') === 0,
+                                                'bg-zinc-500/15 text-zinc-600 dark:text-zinc-300' => ! in_array(strtolower($role->name), ['admin', 'mentor'], true),
+                                            ])>
+                                                {{ str($role->name)->headline() }}
+                                            </span>
+                                        @empty
+                                            <span class="text-zinc-400">—</span>
+                                        @endforelse
+                                    </div>
                                 </td>
                                 <td class="hidden px-5 py-3 lg:table-cell">
                                     @if ($user->flags->isEmpty())
@@ -216,6 +243,82 @@
                                             wire:click="deleteUser({{ $user->id }})"
                                             wire:confirm="{{ __('Delete :name? This cannot be undone.', ['name' => $user->name]) }}"
                                             :disabled="$user->id === auth()->id()"
+                                        >
+                                            <x-material-icon name="delete" class="text-[1rem]" />
+                                        </flux:button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
+    @if ($activeTab === 'roles')
+        <div class="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+            <div class="flex flex-col gap-4 border-b border-zinc-200 p-4 dark:border-zinc-700 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                <div>
+                    <flux:heading size="lg">{{ __('Roles') }}</flux:heading>
+                    <flux:text class="mt-1 text-sm">{{ __('Define roles and which capabilities they grant. Users can hold multiple roles.') }}</flux:text>
+                </div>
+                <flux:button variant="primary" wire:click="openCreateRoleModal">
+                    <span class="inline-flex items-center gap-2">
+                        <x-material-icon name="add" class="text-[1.25rem]" />
+                        {{ __('Add role') }}
+                    </span>
+                </flux:button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="border-b border-zinc-200 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-700">
+                        <tr>
+                            <th class="px-5 py-3">{{ __('Role') }}</th>
+                            <th class="px-5 py-3 hidden md:table-cell">{{ __('Description') }}</th>
+                            <th class="px-5 py-3">{{ __('Permissions') }}</th>
+                            <th class="px-5 py-3">{{ __('Users') }}</th>
+                            <th class="px-5 py-3 text-end">{{ __('Actions') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                        @foreach ($this->roles as $role)
+                            <tr wire:key="role-{{ $role->id }}" class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                                <td class="px-5 py-3 font-medium text-zinc-900 dark:text-white">
+                                    {{ str($role->name)->headline() }}
+                                    @if ($role->is_system)
+                                        <span class="ms-2 rounded-full bg-zinc-500/15 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:text-zinc-300">{{ __('System') }}</span>
+                                    @endif
+                                </td>
+                                <td class="hidden px-5 py-3 text-zinc-600 dark:text-zinc-300 md:table-cell">
+                                    {{ $role->description ?: '—' }}
+                                </td>
+                                <td class="px-5 py-3">
+                                    @if (strcasecmp($role->name, 'admin') === 0)
+                                        <span class="text-xs text-zinc-500">{{ __('All capabilities') }}</span>
+                                    @elseif ($role->permissions->isEmpty())
+                                        <span class="text-zinc-400">—</span>
+                                    @else
+                                        <div class="flex flex-wrap gap-1">
+                                            @foreach ($role->permissions as $permission)
+                                                <span class="rounded-full bg-huddle-primary/10 px-2 py-0.5 text-xs text-huddle-primary">{{ $permission->name }}</span>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </td>
+                                <td class="px-5 py-3">{{ $role->users_count }}</td>
+                                <td class="px-5 py-3">
+                                    <div class="flex justify-end gap-1">
+                                        <flux:button size="sm" variant="ghost" wire:click="openEditRoleModal({{ $role->id }})">
+                                            <x-material-icon name="edit" class="text-[1rem]" />
+                                        </flux:button>
+                                        <flux:button
+                                            size="sm"
+                                            variant="danger"
+                                            wire:click="deleteRole({{ $role->id }})"
+                                            wire:confirm="{{ __('Delete role :name?', ['name' => $role->name]) }}"
+                                            :disabled="$role->is_system || $role->users_count > 0"
                                         >
                                             <x-material-icon name="delete" class="text-[1rem]" />
                                         </flux:button>
@@ -764,11 +867,25 @@
             <flux:input wire:model="name" :label="__('Name')" required />
             <flux:input wire:model="email" type="email" :label="__('Email')" required />
 
-            <flux:select wire:model="role_id" :label="__('Role')">
-                @foreach ($this->roles as $role)
-                    <flux:select.option :value="$role->id">{{ str($role->name)->headline() }}</flux:select.option>
-                @endforeach
-            </flux:select>
+            <div>
+                <flux:label>{{ __('Roles') }}</flux:label>
+                <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                    @foreach ($this->roles as $role)
+                        <label class="flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700">
+                            <input
+                                type="checkbox"
+                                wire:model="assignedRoleIds"
+                                value="{{ $role->id }}"
+                                class="rounded border-zinc-300 text-huddle-primary focus:ring-huddle-primary"
+                            >
+                            <span>{{ str($role->name)->headline() }}</span>
+                        </label>
+                    @endforeach
+                </div>
+                @error('assignedRoleIds')
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
 
             @if ($userModalMode === 'add')
                 <flux:input wire:model="password" type="password" :label="__('Password')" viewable required />
@@ -795,6 +912,63 @@
                     @else
                         {{ __('Create user') }}
                     @endif
+                </flux:button>
+            </div>
+        </form>
+    </flux:modal>
+
+    <flux:modal wire:model="showRoleModal" class="md:max-w-2xl">
+        <form wire:submit="saveRole" class="space-y-6">
+            <div>
+                <flux:heading size="lg">
+                    {{ $editingRoleId ? __('Edit role') : __('Add role') }}
+                </flux:heading>
+                <flux:text class="mt-1">{{ __('Choose which capabilities this role grants.') }}</flux:text>
+            </div>
+
+            <flux:input
+                wire:model="role_name"
+                :label="__('Name')"
+                required
+                :disabled="$editingRoleId && $this->roles->firstWhere('id', $editingRoleId)?->is_system"
+            />
+            <flux:textarea wire:model="role_description" :label="__('Description')" rows="2" />
+
+            @php
+                $editingRole = $editingRoleId ? $this->roles->firstWhere('id', $editingRoleId) : null;
+                $isAdminRole = $editingRole && strcasecmp($editingRole->name, 'admin') === 0;
+            @endphp
+
+            @if ($isAdminRole)
+                <flux:text class="text-sm">{{ __('The admin role always has full access and does not need individual permissions.') }}</flux:text>
+            @else
+                <div>
+                    <flux:label>{{ __('Permissions') }}</flux:label>
+                    <div class="mt-2 grid gap-2">
+                        @foreach ($this->permissions as $permission)
+                            <label class="flex items-start gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700">
+                                <input
+                                    type="checkbox"
+                                    wire:model="assignedPermissionIds"
+                                    value="{{ $permission->id }}"
+                                    class="mt-0.5 rounded border-zinc-300 text-huddle-primary focus:ring-huddle-primary"
+                                >
+                                <span>
+                                    <span class="font-medium text-zinc-900 dark:text-white">{{ $permission->name }}</span>
+                                    @if ($permission->description)
+                                        <span class="block text-xs text-zinc-500">{{ $permission->description }}</span>
+                                    @endif
+                                </span>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" variant="ghost" wire:click="closeRoleModal">{{ __('Cancel') }}</flux:button>
+                <flux:button type="submit" variant="primary">
+                    {{ $editingRoleId ? __('Save changes') : __('Create role') }}
                 </flux:button>
             </div>
         </form>
@@ -831,12 +1005,14 @@
                 <flux:text class="mt-1">{{ __('Link a member to a membership period.') }}</flux:text>
             </div>
 
-            <flux:select wire:model="membership_assignment_user_id" :label="__('Member')" required>
-                <flux:select.option value="">{{ __('Select a member…') }}</flux:select.option>
-                @foreach ($this->users as $user)
-                    <flux:select.option :value="$user->id">{{ $user->name }}</flux:select.option>
-                @endforeach
-            </flux:select>
+            <x-member-select
+                :users="$this->users"
+                :selected-id="$membership_assignment_user_id"
+                wire-model="membership_assignment_user_id"
+                :label="__('Member')"
+                :placeholder="__('Select a member…')"
+                required
+            />
 
             <flux:select wire:model="membership_assignment_renewal_id" :label="__('Period')" required>
                 <flux:select.option value="">{{ __('Select a period…') }}</flux:select.option>

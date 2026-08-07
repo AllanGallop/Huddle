@@ -138,14 +138,13 @@
                         <div>
                             <flux:text class="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">{{ __('Manage roster') }}</flux:text>
                             <form wire:submit="addVolunteer" class="space-y-3">
-                                <flux:select wire:model="adminVolunteerUserId" :label="__('Add member')" placeholder="{{ __('Select a member...') }}">
-                                    @foreach ($this->availableVolunteerUsers as $user)
-                                        <flux:select.option :value="$user->id">{{ $user->name }}</flux:select.option>
-                                    @endforeach
-                                </flux:select>
-                                @error('adminVolunteerUserId')
-                                    <p class="text-sm text-red-600">{{ $message }}</p>
-                                @enderror
+                                <x-member-select
+                                    :users="$this->availableVolunteerUsers"
+                                    :selected-id="$adminVolunteerUserId"
+                                    wire-model="adminVolunteerUserId"
+                                    :label="__('Add member')"
+                                    :placeholder="__('Select a member…')"
+                                />
                                 <flux:button type="submit" variant="primary" size="sm" class="w-full" :disabled="$this->availableVolunteerUsers->isEmpty()">
                                     <span class="inline-flex items-center justify-center gap-1.5">
                                         <x-material-icon name="person_add" class="text-[1.125rem]" />
@@ -168,14 +167,12 @@
                                     <li wire:key="event-volunteer-{{ $volunteer->id }}">
                                         @if ($this->isAdmin && $editingVolunteerId === $volunteer->id)
                                             <form wire:submit="updateVolunteer" class="space-y-2 rounded-lg border border-huddle-primary/30 bg-white p-3 dark:bg-zinc-900">
-                                                <flux:select wire:model="editVolunteerUserId" :label="__('Member')">
-                                                    @foreach ($this->users as $user)
-                                                        <flux:select.option :value="$user->id">{{ $user->name }}</flux:select.option>
-                                                    @endforeach
-                                                </flux:select>
-                                                @error('editVolunteerUserId')
-                                                    <p class="text-sm text-red-600">{{ $message }}</p>
-                                                @enderror
+                                                <x-member-select
+                                                    :users="$this->users"
+                                                    :selected-id="$editVolunteerUserId"
+                                                    wire-model="editVolunteerUserId"
+                                                    :label="__('Member')"
+                                                />
                                                 <div class="flex gap-2">
                                                     <flux:button type="submit" variant="primary" size="sm">{{ __('Save') }}</flux:button>
                                                     <flux:button type="button" variant="ghost" size="sm" wire:click="cancelEditVolunteer">{{ __('Cancel') }}</flux:button>

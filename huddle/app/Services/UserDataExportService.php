@@ -9,7 +9,7 @@ class UserDataExportService
     public function export(User $user): array
     {
         $user->load([
-            'role',
+            'roles',
             'flags',
             'accreditationAssignments.accreditation',
             'membershipRenewalAssignments.membershipRenewal',
@@ -21,7 +21,7 @@ class UserDataExportService
                 'name' => $user->name,
                 'email' => $user->email,
                 'email_verified_at' => $user->email_verified_at?->toIso8601String(),
-                'role' => $user->role?->name,
+                'roles' => $user->roles->pluck('name')->values()->all(),
                 'digest_opt_out' => $user->digest_opt_out,
                 'privacy_policy_accepted_at' => $user->privacy_policy_accepted_at?->toIso8601String(),
                 'privacy_policy_version' => $user->privacy_policy_version,

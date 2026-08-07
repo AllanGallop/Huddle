@@ -73,9 +73,11 @@ class User extends Authenticatable
             ->implode('');
     }
 
-    public function role()
+    public function roles(): BelongsToMany
     {
-        return $this->belongsTo(Role::class);
+        return $this->belongsToMany(Role::class, 'role_user')
+            ->withTimestamps()
+            ->orderBy('name');
     }
 
     public function flags(): BelongsToMany
@@ -88,6 +90,13 @@ class User extends Authenticatable
     public function accreditationAssignments(): HasMany
     {
         return $this->hasMany(AccreditationAssignment::class);
+    }
+
+    public function mentoredAccreditations(): BelongsToMany
+    {
+        return $this->belongsToMany(Accreditation::class, 'accreditation_mentors')
+            ->withTimestamps()
+            ->orderBy('name');
     }
 
     public function membershipRenewalAssignments(): HasMany
@@ -249,29 +258,59 @@ class User extends Authenticatable
         return $this->flags()->whereRaw('LOWER(name) = ?', [strtolower($name)])->exists();
     }
 
+    public function hasRole(string $name): bool
+    {
+        if ($this->relationLoaded('roles')) {
+            return $this->roles->contains(
+                fn (Role $role): bool => strcasecmp($role->name, $name) === 0,
+            );
+        }
+
+        return $this->roles()->whereRaw('LOWER(name) = ?', [strtolower($name)])->exists();
+    }
+
+    public function hasPermission(string $slug): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        if ($this->relationLoaded('roles')) {
+            $this->roles->loadMissing('permissions');
+
+            return $this->roles->contains(
+                fn (Role $role): bool => $role->hasPermission($slug),
+            );
+        }
+
+        return $this->roles()
+            ->whereHas('permissions', fn ($query) => $query->where('slug', $slug))
+            ->exists();
+    }
+
     public function isMentor(): bool
     {
-        return $this->hasFlag('Mentor');
+        return $this->hasRole('Mentor') || $this->hasFlag('Mentor');
     }
 
     public function canAccessMentors(): bool
     {
-        return $this->isAdmin() || $this->isMentor();
+        return $this->isAdmin() || $this->hasPermission(Permission::ACCREDITATIONS_ASSIGN_VIA_EXAM);
     }
 
     public function canManageForms(): bool
     {
-        return $this->canAccessMentors();
+        return $this->hasPermission(Permission::FORMS_MANAGE);
     }
 
     public function canManageWiki(): bool
     {
-        return $this->canAccessMentors();
+        return $this->hasPermission(Permission::WIKI_EDIT);
     }
 
     public function isAdmin(): bool
     {
-        return $this->role?->name === 'admin';
+        return $this->hasRole('admin');
     }
 
     public function canViewFinancialReports(): bool
@@ -286,7 +325,12 @@ class User extends Authenticatable
 
     public function canManageProject(Project $project): bool
     {
-        return $this->isAdmin() || $this->ownsProject($project);
+        return $this->ownsProject($project) || $this->hasPermission(Permission::PROJECTS_EDIT_ANY);
+    }
+
+    public function canDeleteProject(Project $project): bool
+    {
+        return $this->ownsProject($project) || $this->hasPermission(Permission::PROJECTS_DELETE_ANY);
     }
 
     public function leadsProject(Project $project): bool
@@ -306,7 +350,12 @@ class User extends Authenticatable
 
     public function canManageEvent(Event $event): bool
     {
-        return $this->isAdmin() || $this->ownsEvent($event);
+        return $this->ownsEvent($event) || $this->hasPermission(Permission::EVENTS_EDIT_ANY);
+    }
+
+    public function canDeleteEvent(Event $event): bool
+    {
+        return $this->ownsEvent($event) || $this->hasPermission(Permission::EVENTS_DELETE_ANY);
     }
 
     public function canViewEvent(Event $event): bool
@@ -316,7 +365,7 @@ class User extends Authenticatable
         }
 
         if ($event->event_status === 'draft') {
-            return $this->ownsEvent($event);
+            return $this->ownsEvent($event) || $this->hasPermission(Permission::EVENTS_EDIT_ANY);
         }
 
         return in_array($event->event_status, ['published', 'cancelled', 'archived'], true);

@@ -33,20 +33,46 @@ class UserFactory extends Factory
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
-            'role_id' => 2,
             'privacy_policy_accepted_at' => now(),
             'privacy_policy_version' => config('gdpr.policy_version'),
         ];
     }
 
+    public function configure(): static
+    {
+        return $this->afterCreating(function (\App\Models\User $user): void {
+            if ($user->roles()->exists()) {
+                return;
+            }
+
+            $memberRoleId = Role::query()->where('name', 'member')->value('id');
+            if ($memberRoleId) {
+                $user->roles()->attach($memberRoleId);
+            }
+        });
+    }
+
     /**
-     * Indicate that the model's email address should be unverified.
+     * Indicate that the user is an admin.
      */
     public function admin(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'role_id' => Role::query()->where('name', 'admin')->value('id') ?? 1,
-        ]);
+        return $this->afterCreating(function (\App\Models\User $user): void {
+            $adminRoleId = Role::query()->where('name', 'admin')->value('id');
+            if ($adminRoleId) {
+                $user->roles()->sync([$adminRoleId]);
+            }
+        });
+    }
+
+    public function withRole(string $name): static
+    {
+        return $this->afterCreating(function (\App\Models\User $user) use ($name): void {
+            $roleId = Role::query()->where('name', $name)->value('id');
+            if ($roleId) {
+                $user->roles()->syncWithoutDetaching([$roleId]);
+            }
+        });
     }
 
     public function unverified(): static

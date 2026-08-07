@@ -5,6 +5,7 @@ namespace App\Livewire\Mentors;
 use App\Models\Accreditation;
 use App\Models\AccreditationAssignment;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -35,18 +36,37 @@ class Index extends Component
 
     public bool $assignment_is_active = true;
 
+    public bool $showMentorModal = false;
+
+    public ?int $mentor_accreditation_id = null;
+
+    /** @var array<int> */
+    public array $assignedMentorIds = [];
+
     public function setTab(string $tab): void
     {
-        if (in_array($tab, ['accreditations', 'assignments'], true)) {
+        $allowed = ['accreditations', 'assignments'];
+        if (Auth::user()?->isAdmin()) {
+            $allowed[] = 'mentors';
+        }
+
+        if (in_array($tab, $allowed, true)) {
             $this->activeTab = $tab;
         }
+    }
+
+    #[Computed]
+    public function isAdmin(): bool
+    {
+        return Auth::user()->isAdmin();
     }
 
     #[Computed]
     public function accreditations()
     {
         return Accreditation::query()
-            ->withCount('assignments')
+            ->withCount(['assignments', 'mentors'])
+            ->with('mentors')
             ->orderBy('name')
             ->get();
     }
@@ -125,6 +145,7 @@ class Index extends Component
     {
         $accreditation = Accreditation::query()->findOrFail($accreditationId);
         $accreditation->assignments()->delete();
+        $accreditation->mentors()->detach();
         $accreditation->delete();
 
         unset($this->accreditations, $this->assignments);
@@ -195,6 +216,43 @@ class Index extends Component
 
         unset($this->assignments, $this->accreditations);
         session()->flash('status', __('Assignment removed successfully.'));
+    }
+
+    public function openEditMentorsModal(int $accreditationId): void
+    {
+        abort_unless(Auth::user()?->isAdmin(), 403);
+
+        $accreditation = Accreditation::query()->with('mentors')->findOrFail($accreditationId);
+
+        $this->mentor_accreditation_id = $accreditation->id;
+        $this->assignedMentorIds = $accreditation->mentors->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $this->showMentorModal = true;
+    }
+
+    public function closeMentorModal(): void
+    {
+        $this->showMentorModal = false;
+        $this->reset(['mentor_accreditation_id', 'assignedMentorIds']);
+        $this->assignedMentorIds = [];
+        $this->resetValidation();
+    }
+
+    public function saveMentors(): void
+    {
+        abort_unless(Auth::user()?->isAdmin(), 403);
+
+        $validated = $this->validate([
+            'mentor_accreditation_id' => ['required', 'exists:accreditations,id'],
+            'assignedMentorIds' => ['array'],
+            'assignedMentorIds.*' => ['integer', 'exists:users,id'],
+        ]);
+
+        $accreditation = Accreditation::query()->findOrFail($validated['mentor_accreditation_id']);
+        $accreditation->mentors()->sync($validated['assignedMentorIds'] ?? []);
+
+        $this->closeMentorModal();
+        unset($this->accreditations);
+        session()->flash('status', __('Mentors updated successfully.'));
     }
 
     protected function resetAccreditationForm(): void

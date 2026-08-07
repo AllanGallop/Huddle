@@ -14,13 +14,22 @@
             <div>
                 <flux:heading size="xl">{{ $profileUser->name }}</flux:heading>
                 <flux:text class="mt-1">
-                    <span @class([
-                        'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
-                        'bg-huddle-primary/15 text-huddle-primary' => $profileUser->isAdmin(),
-                        'bg-zinc-500/15 text-zinc-600 dark:text-zinc-300' => ! $profileUser->isAdmin(),
-                    ])>
-                        {{ str($profileUser->role?->name ?? 'member')->headline() }}
-                    </span>
+                    <div class="flex flex-wrap gap-1">
+                        @forelse ($profileUser->roles as $role)
+                            <span @class([
+                                'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
+                                'bg-huddle-primary/15 text-huddle-primary' => strcasecmp($role->name, 'admin') === 0,
+                                'bg-huddle-comp/20 text-green-800 dark:text-huddle-comp' => strcasecmp($role->name, 'Mentor') === 0,
+                                'bg-zinc-500/15 text-zinc-600 dark:text-zinc-300' => ! in_array(strtolower($role->name), ['admin', 'mentor'], true),
+                            ])>
+                                {{ str($role->name)->headline() }}
+                            </span>
+                        @empty
+                            <span class="inline-flex rounded-full bg-zinc-500/15 px-2.5 py-0.5 text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                                {{ __('Member') }}
+                            </span>
+                        @endforelse
+                    </div>
                 </flux:text>
             </div>
         </div>

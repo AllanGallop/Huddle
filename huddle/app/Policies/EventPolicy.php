@@ -19,7 +19,7 @@ class EventPolicy
 
     public function delete(User $user, Event $event): bool
     {
-        return $user->canManageEvent($event);
+        return $user->canDeleteEvent($event);
     }
 
     public function manageVolunteers(User $user, Event $event): bool

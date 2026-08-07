@@ -4,10 +4,8 @@ namespace Tests\Feature\Wiki;
 
 use App\Livewire\Wiki\Edit;
 use App\Models\User;
-use App\Models\UserFlags;
 use App\Models\WikiDirectory;
 use App\Models\WikiPage;
-use App\Models\WikiPageVersion;
 use App\Services\WikiPageService;
 use App\Support\WikiMarkdown;
 use App\Support\WikiPathResolver;
@@ -23,7 +21,7 @@ class WikiTest extends TestCase
 
     public function test_member_cannot_edit_wiki(): void
     {
-        $member = User::factory()->create(['role_id' => 2]);
+        $member = User::factory()->create();
 
         $this->actingAs($member)
             ->get(route('wiki.edit'))
@@ -32,8 +30,7 @@ class WikiTest extends TestCase
 
     public function test_mentor_can_create_page_with_version_and_wiki_links(): void
     {
-        $mentor = User::factory()->create(['role_id' => 2]);
-        $mentor->flags()->attach(UserFlags::create(['name' => 'Mentor', 'description' => 'Mentor']));
+        $mentor = User::factory()->withRole('Mentor')->create();
 
         $dir = WikiDirectory::create(['name' => 'Guides', 'slug' => 'guides']);
 
@@ -80,7 +77,7 @@ class WikiTest extends TestCase
 
     public function test_restoring_version_creates_new_revision(): void
     {
-        $admin = User::factory()->create(['role_id' => 1]);
+        $admin = User::factory()->admin()->create();
         $service = app(WikiPageService::class);
 
         $page = $service->create([
@@ -106,8 +103,7 @@ class WikiTest extends TestCase
     {
         Storage::fake('public');
 
-        $mentor = User::factory()->create(['role_id' => 2]);
-        $mentor->flags()->attach(UserFlags::create(['name' => 'Mentor', 'description' => 'Mentor']));
+        $mentor = User::factory()->withRole('Mentor')->create();
 
         $response = $this->actingAs($mentor)->post(route('wiki.upload-image'), [
             'file' => UploadedFile::fake()->create('guide.pdf', 200, 'application/pdf'),
@@ -133,8 +129,7 @@ class WikiTest extends TestCase
     {
         Storage::fake('public');
 
-        $mentor = User::factory()->create(['role_id' => 2]);
-        $mentor->flags()->attach(UserFlags::create(['name' => 'Mentor', 'description' => 'Mentor']));
+        $mentor = User::factory()->withRole('Mentor')->create();
 
         $response = $this->actingAs($mentor)->post(route('wiki.upload-image'), [
             'file' => UploadedFile::fake()->image('diagram.png'),

@@ -12,7 +12,7 @@ class Show extends Component
     public function mount(User $user): void
     {
         $this->profileUser = $user->load([
-            'role',
+            'roles',
             'flags',
             'membershipRenewalAssignments' => fn ($query) => $query
                 ->with('membershipRenewal')

@@ -28,6 +28,16 @@
 
                 @if ($type === 'exam')
                     <flux:input wire:model="pass_percentage" type="number" min="1" max="100" :label="__('Pass percentage')" required />
+
+                    @if ($this->canLinkAccreditation)
+                        <flux:select wire:model="accreditation_id" :label="__('Grants accreditation (optional)')">
+                            <flux:select.option value="">{{ __('None') }}</flux:select.option>
+                            @foreach ($this->accreditations as $accreditation)
+                                <flux:select.option :value="$accreditation->id">{{ $accreditation->name }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+                        <flux:text class="text-sm text-zinc-500">{{ __('Members who pass this exam are automatically assigned the selected accreditation.') }}</flux:text>
+                    @endif
                 @endif
 
                 <flux:switch wire:model="is_published" :label="__('Published')" />

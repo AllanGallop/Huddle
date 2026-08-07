@@ -52,12 +52,17 @@
                 @endforeach
             </flux:select>
 
-            <flux:select wire:model.live="leaderFilter" :label="__('Leader')">
-                <flux:select.option value="">{{ __('All leaders') }}</flux:select.option>
-                @foreach ($this->leaders as $leader)
-                    <flux:select.option :value="$leader->id">{{ $leader->name }}</flux:select.option>
-                @endforeach
-            </flux:select>
+            <x-member-select
+                :users="$this->leaders"
+                :selected-id="$leaderFilter"
+                wire-model="leaderFilter"
+                :label="__('Leader')"
+                :placeholder="__('All leaders')"
+                :allow-clear="true"
+                :clear-label="__('All leaders')"
+                empty-value=""
+                :show-email="false"
+            />
 
             <flux:select wire:model.live="categoryFilter" :label="__('Category')">
                 <flux:select.option value="">{{ __('All categories') }}</flux:select.option>
@@ -351,11 +356,13 @@
             <flux:textarea wire:model="description" :label="__('Description')" rows="4" required />
 
             @if (auth()->user()->can('assignLeader', \App\Models\Project::class))
-                <flux:select wire:model="leader_id" :label="__('Project leader')">
-                    @foreach ($this->users as $user)
-                        <flux:select.option :value="$user->id">{{ $user->name }}</flux:select.option>
-                    @endforeach
-                </flux:select>
+                <x-member-select
+                    :users="$this->users"
+                    :selected-id="$leader_id"
+                    wire-model="leader_id"
+                    :label="__('Project leader')"
+                    :show-email="false"
+                />
             @else
                 <flux:text class="text-sm text-zinc-600 dark:text-zinc-300">
                     {{ __('You will be assigned as the project leader.') }}

@@ -18,7 +18,7 @@ class UserInvitationTest extends TestCase
     {
         Notification::fake();
 
-        $admin = User::factory()->create(['role_id' => 1]);
+        $admin = User::factory()->admin()->create();
         $role = Role::query()->where('name', 'member')->firstOrFail();
 
         $this->actingAs($admin);
@@ -27,7 +27,7 @@ class UserInvitationTest extends TestCase
             ->call('openCreateUserModal', 'invite')
             ->set('name', 'Invited User')
             ->set('email', 'invited@example.com')
-            ->set('role_id', $role->id)
+            ->set('assignedRoleIds', [$role->id])
             ->call('saveUser');
 
         $invited = User::query()->where('email', 'invited@example.com')->first();

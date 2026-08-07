@@ -73,10 +73,10 @@ class UserDataErasureService
         if (! $user->exists) {
             $user->name = config('gdpr.placeholder_name');
             $user->password = Hash::make(Str::password(64));
-            $user->role_id = $memberRoleId;
             $user->email_verified_at = now();
             $user->digest_opt_out = true;
             $user->save();
+            $user->roles()->sync([$memberRoleId]);
         }
 
         return $user;

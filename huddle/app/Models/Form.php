@@ -19,6 +19,7 @@ class Form extends Model
         'is_published',
         'pass_percentage',
         'created_by',
+        'accreditation_id',
     ];
 
     protected function casts(): array
@@ -32,6 +33,11 @@ class Form extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function accreditation(): BelongsTo
+    {
+        return $this->belongsTo(Accreditation::class);
     }
 
     public function questions(): HasMany

@@ -18,7 +18,7 @@ class ProfileMembershipTest extends TestCase
 
     public function test_profile_settings_shows_user_tags_and_accreditations(): void
     {
-        $user = User::factory()->create(['role_id' => 2]);
+        $user = User::factory()->create();
 
         $tag = UserFlags::create(['name' => 'Mentor', 'description' => 'Accreditation Mentor']);
         $user->flags()->attach($tag);

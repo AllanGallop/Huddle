@@ -5,7 +5,6 @@ namespace Tests\Feature\Gdpr;
 use App\Livewire\Settings\Privacy;
 use App\Models\Project;
 use App\Models\ProjectComment;
-use App\Models\Role;
 use App\Models\User;
 use App\Services\UserDataErasureService;
 use App\Services\UserDataExportService;
@@ -97,8 +96,7 @@ class GdprControlsTest extends TestCase
 
     public function test_erasure_removes_user_and_reassigns_owned_records(): void
     {
-        $memberRoleId = Role::query()->where('name', 'member')->value('id');
-        $user = User::factory()->create(['role_id' => $memberRoleId]);
+        $user = User::factory()->create();
         $other = User::factory()->create();
 
         $project = Project::create([

@@ -41,15 +41,17 @@
                     <p class="mt-1 text-sm text-zinc-500">{{ __('Use only the options you need to keep the report short.') }}</p>
 
                     <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                        <label class="block text-sm">
-                            <span class="mb-1 block text-zinc-600 dark:text-zinc-300">{{ __('Leader') }}</span>
-                            <select name="leader_id" class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100">
-                                <option value="">{{ __('All leaders') }}</option>
-                                @foreach ($this->leaders as $leader)
-                                    <option value="{{ $leader->id }}" @selected($leader_id !== '' && (int) $leader_id === $leader->id)>{{ $leader->name }}</option>
-                                @endforeach
-                            </select>
-                        </label>
+                        <x-member-select
+                            :users="$this->leaders"
+                            :selected-id="$leader_id"
+                            name="leader_id"
+                            :label="__('Leader')"
+                            :placeholder="__('All leaders')"
+                            :allow-clear="true"
+                            :clear-label="__('All leaders')"
+                            empty-value=""
+                            :show-email="false"
+                        />
 
                         @if ($this->canViewFinancials)
                             <label class="block text-sm">

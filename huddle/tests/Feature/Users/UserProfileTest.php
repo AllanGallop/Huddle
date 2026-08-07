@@ -23,9 +23,8 @@ class UserProfileTest extends TestCase
 
     public function test_authenticated_user_can_view_limited_profile(): void
     {
-        $viewer = User::factory()->create(['role_id' => 2]);
+        $viewer = User::factory()->create();
         $member = User::factory()->create([
-            'role_id' => 2,
             'name' => 'Alex Member',
             'email' => 'alex.secret@example.com',
         ]);

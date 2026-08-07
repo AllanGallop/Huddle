@@ -29,7 +29,7 @@ class ProjectPolicy
 
     public function delete(User $user, Project $project): bool
     {
-        return $user->canManageProject($project);
+        return $user->canDeleteProject($project);
     }
 
     public function manageFinancials(User $user, Project $project): bool
