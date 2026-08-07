@@ -23,3 +23,5 @@ Reports reflect the current filter set and are useful for regular committee revi
 ## Permissions
 
 Financial columns are visible to users with the **Committee** tag or the **admin** role. See [Roles and permissions](roles-and-permissions.md).
+
+Leader filtering uses a searchable member picker.

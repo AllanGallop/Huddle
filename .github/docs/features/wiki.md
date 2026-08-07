@@ -14,7 +14,7 @@ All members can read wiki content. Pages support:
 
 ## Editing
 
-Mentors and admins can:
+Users with **Edit wiki** (or admin) can:
 
 - Create, edit, and organise pages
 - Manage the directory structure
@@ -22,4 +22,4 @@ Mentors and admins can:
 
 ## Permissions
 
-Wiki editing requires the **Mentor** tag or **admin** role. See [Roles and permissions](roles-and-permissions.md).
+Wiki editing requires the **Edit wiki** permission or the **admin** role (included on the seeded Mentor role). See [Roles and permissions](roles-and-permissions.md).

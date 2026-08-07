@@ -129,20 +129,23 @@ huddle/app/
 ├── Support/           # Installer, branding helpers, wiki utilities
 ├── Http/
 │   ├── Controllers/   # File downloads, exports, wiki assets
-│   └── Middleware/    # Admin, mentor, privacy acceptance
+│   └── Middleware/    # Admin, privacy acceptance
 └── Policies/          # Authorization rules
 ```
 
 ### Roles and access
 
-| Role / flag | Access |
-|-------------|--------|
-| **admin** (role) | Full admin panel, user management, organization settings |
-| **member** (role) | Default role for regular users |
-| **Mentor** (user flag) | Forms management, wiki editing, mentors area |
-| **Committee** (user flag) | Financial reports |
+Users may hold **multiple roles**. Permissions are unioned; the **admin** role bypasses gates via `Gate::before`.
 
-Admins inherit mentor capabilities where middleware checks `canAccessMentors()`.
+| Concept | Access |
+|---------|--------|
+| **admin** (role) | Full admin panel and all capabilities |
+| **member** (role) | Default role; no elevated permissions |
+| **Mentor** (seeded role) | `wiki.edit`, `forms.manage`, `accreditations.assign_via_exam` |
+| Permission gates | `projects.edit_any`, `projects.delete_any`, `events.edit_any`, `events.delete_any`, `wiki.edit`, `forms.manage`, `accreditations.assign_via_exam` |
+| **Committee** (user flag) | Financial report columns |
+
+See [Roles and permissions](features/roles-and-permissions.md). Assign roles in Admin → Roles / Users after migrate.
 
 ## Common tasks
 

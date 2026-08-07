@@ -8,7 +8,9 @@ Track community build and improvement work from idea through completion.
 
 ## Project list
 
-Browse all projects with status badges, categories, leader, due dates, and volunteer indicators. Members can create new projects; non-admins are automatically assigned as project leader when they do.
+Browse projects in a compact table: name and category badges on one line, coloured activity counts (comments, volunteers, images) underneath, plus columns for leader, status, **volunteers wanted**, due date, finance (when permitted), and dates. Status is highlighted with a coloured accent on each row.
+
+Members can create new projects; non-admins are automatically assigned as project leader when they do. Leader and other member fields use a searchable select.
 
 Filter by status, leader, category, volunteers, and (for leaders/admins) financial status.
 
@@ -25,7 +27,7 @@ Each project page has two tabs for users with financial access.
 - Description
 - Image gallery with upload, thumbnail navigation, aspect-ratio previews, and a full-size modal on click
 - Threaded comments and replies
-- Volunteer sign-up, roster management (for admins), and project metadata
+- Volunteer sign-up, roster management (for admins; searchable member picker), and project metadata
 
 ### Finance
 
@@ -45,4 +47,4 @@ Bank details from [Admin → Bank details](admin.md#bank-details) appear on gene
 
 ## Permissions
 
-See [Roles and permissions](roles-and-permissions.md#project-and-event-ownership).
+Creators manage their own projects. **Edit any project** / **Delete any project** extend that to others’ work. Admins can manage volunteers and assign leaders. See [Roles and permissions](roles-and-permissions.md#project-and-event-ownership).

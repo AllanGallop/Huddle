@@ -10,16 +10,27 @@ Central management for organisation configuration. Available to users with the *
 
 - Invite users by email (sends a password-reset link)
 - Resend invitation emails when the previous link has expired (mail icon on each user row)
-- Add users directly with role assignment
+- Add users directly with **one or more roles** and optional tags
 - Edit names, emails, roles, and tags
 - Remove users (the last admin cannot be deleted)
+
+Member pickers elsewhere in Admin (for example membership assignment) use a searchable select.
+
+## Roles
+
+- Create and edit custom roles
+- Tick which [permissions](roles-and-permissions.md#permissions) each role grants
+- Delete unused non-system roles (blocked if users are still assigned)
+- System roles **Admin** and **Member** cannot be renamed or deleted; Admin always has full access
+
+Assign roles to users from the Users tab (multi-select).
 
 ## Tags
 
 - Create and edit user flags (Mentor, Committee, Keyholder, etc.)
 - Assign tags to users from the user edit modal
 
-Tags control access across the platform — see [Roles and permissions](roles-and-permissions.md).
+Tags are primarily for display and filtering. **Committee** still gates financial report columns. Capability access uses roles and permissions — see [Roles and permissions](roles-and-permissions.md).
 
 ## Categories
 
@@ -31,7 +42,7 @@ Default categories are seeded on install; admins can add or remove them here.
 ## Membership
 
 - **Periods** — define membership renewal windows (name, start date, end date)
-- **Assignments** — assign members to renewal periods; used for active/expired filtering on the [Members](members.md) page
+- **Assignments** — assign members to renewal periods (searchable member picker); used for active/expired filtering on the [Members](members.md) page
 
 ## Branding
 

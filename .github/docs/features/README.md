@@ -15,16 +15,19 @@ The sidebar groups day-to-day tools under **Platform**:
 | Reports | `/reports` | [Reports](reports.md) | All members; financial columns for Committee and admins |
 | Events | `/events` | [Events](events.md) | All members |
 | Members | `/members` | [Members](members.md) | All members |
-| Forms | `/forms` | [Forms](forms.md) | All members; management for mentors and admins |
-| Wiki | `/wiki` | [Wiki](wiki.md) | All members; editing for mentors and admins |
-| Mentors | `/mentors` | [Mentors](mentors.md) | Mentors and admins |
+| Forms | `/forms` | [Forms](forms.md) | All members; management via **Manage forms** permission |
+| Wiki | `/wiki` | [Wiki](wiki.md) | All members; editing via **Edit wiki** permission |
+| Accreditations | `/accreditations` | [Accreditations](accreditations.md) | All members |
+| Manage accreditations | `/mentors` | [Mentors](mentors.md) | **Assign exam to accreditation** or admins |
 | Admin | `/admin` | [Admin](admin.md) | Admins only |
 
 User settings are available from the account menu — see [User settings](user-settings.md).
 
 ## Roles and permissions
 
-See [Roles and permissions](roles-and-permissions.md) for how roles, tags, and ownership rules work across the platform.
+Users can hold **multiple roles**. Permissions are unioned; the **admin** role bypasses all gates. Admins define roles and tick capabilities under [Admin → Roles](admin.md#roles).
+
+See [Roles and permissions](roles-and-permissions.md) for the full permission list and ownership rules.
 
 ## Platform services
 

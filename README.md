@@ -21,14 +21,15 @@ Huddle is a community management platform for organizations that run projects, e
 |---|---|
 | [**Projects**](.github/docs/features/projects.md) | Status tracking, volunteers, images, comments, quotes, and invoices |
 | [**Events**](.github/docs/features/events.md) | Scheduling, public/private visibility, and volunteer rosters |
-| [**Forms**](.github/docs/features/forms.md) | Surveys and scored exams with submission review |
+| [**Forms**](.github/docs/features/forms.md) | Surveys and scored exams (optional accreditation on pass) |
 | [**Wiki**](.github/docs/features/wiki.md) | Markdown knowledge base with version history |
 | [**Members**](.github/docs/features/members.md) | Searchable directory with membership and tags |
-| [**Mentors**](.github/docs/features/mentors.md) | Accreditation management and member assignments |
+| [**Accreditations**](.github/docs/features/accreditations.md) | Public directory of holders and who to ask |
+| [**Mentors**](.github/docs/features/mentors.md) | Manage accreditation types, assignments, and mentor contacts |
 | [**Reports**](.github/docs/features/reports.md) | Filtered project status reports with PDF export |
-| [**Admin**](.github/docs/features/admin.md) | Users, tags, membership, branding, and bank details |
+| [**Admin**](.github/docs/features/admin.md) | Users, roles, permissions, tags, membership, branding, and bank details |
 
-Huddle also includes a [community digest](.github/docs/features/community-digest.md), [privacy & GDPR tools](.github/docs/features/privacy-and-gdpr.md), [two-factor authentication](.github/docs/features/user-settings.md), and a [web-based installer](.github/docs/features/setup.md).
+Huddle also includes multi-role [permissions](.github/docs/features/roles-and-permissions.md), a [community digest](.github/docs/features/community-digest.md), [privacy & GDPR tools](.github/docs/features/privacy-and-gdpr.md), [two-factor authentication](.github/docs/features/user-settings.md), and a [web-based installer](.github/docs/features/setup.md).
 
 <p align="center">
   <img src=".github/images/Screenshot_Project.png" alt="Project detail page" width="49%">

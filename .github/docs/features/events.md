@@ -8,14 +8,14 @@ Plan and publish community events with scheduling, visibility, and volunteer coo
 
 ## Event list
 
-View upcoming and past events with status, type, and volunteer badges. Filter and create new events from the index page.
+View upcoming and past events with status, type, and volunteer badges. Rows use a compact layout with status accent colours. Filter and create new events from the index page.
 
 ## Event detail
 
 - Description and threaded comments
 - Schedule (start/end times) and location
 - Public or private visibility — private events are visible only to organisers, volunteers, and admins
-- Volunteer sign-up and admin roster management
+- Volunteer sign-up and admin roster management (searchable member picker)
 - Status badges: published, public/private, upcoming/ongoing, volunteers needed
 
 ## Statuses
@@ -28,4 +28,4 @@ View upcoming and past events with status, type, and volunteer badges. Filter an
 
 ## Permissions
 
-See [Roles and permissions](roles-and-permissions.md#project-and-event-ownership).
+Creators manage their own events. **Edit any event** / **Delete any event** extend that to others’ events. Admins can manage volunteer rosters. See [Roles and permissions](roles-and-permissions.md#project-and-event-ownership).
