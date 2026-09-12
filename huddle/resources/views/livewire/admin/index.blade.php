@@ -154,6 +154,12 @@
                     <flux:text class="mt-1 text-sm">{{ __(':count users', ['count' => $this->users->count()]) }}</flux:text>
                 </div>
                 <div class="flex flex-wrap gap-2">
+                    <flux:button variant="ghost" wire:click="openCsvInviteModal">
+                        <span class="inline-flex items-center gap-2">
+                            <x-material-icon name="upload_file" class="text-[1.25rem]" />
+                            {{ __('Invite via CSV') }}
+                        </span>
+                    </flux:button>
                     <flux:button variant="ghost" wire:click="openCreateUserModal('invite')">
                         <span class="inline-flex items-center gap-2">
                             <x-material-icon name="mail" class="text-[1.25rem]" />
@@ -915,6 +921,112 @@
                 </flux:button>
             </div>
         </form>
+    </flux:modal>
+
+    <flux:modal wire:model="showCsvInviteModal" class="md:max-w-4xl">
+        <div class="space-y-6">
+            <div>
+                <flux:heading size="lg">{{ __('Invite users via CSV') }}</flux:heading>
+                <flux:text class="mt-1">
+                    {{ __('Upload a CSV file to create accounts and send invitation emails in bulk. Each row can set roles, tags, and membership.') }}
+                </flux:text>
+            </div>
+
+            <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm dark:border-zinc-700 dark:bg-zinc-800/60">
+                <p class="font-medium text-zinc-900 dark:text-white">{{ __('CSV format') }}</p>
+                <p class="mt-1 text-zinc-600 dark:text-zinc-300">
+                    {{ __('Required columns: name, email. Optional columns: roles, tags, membership.') }}
+                </p>
+                <pre class="mt-3 overflow-x-auto rounded-md bg-white p-3 text-xs text-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">name,email,roles,tags,membership
+Jane Doe,jane@example.com,member,Mentor;Committee,2026</pre>
+                <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                    {{ __('Use semicolons to separate multiple roles or tags. Roles default to member when omitted.') }}
+                </p>
+            </div>
+
+            <div>
+                <flux:input
+                    type="file"
+                    wire:model="csvInviteUpload"
+                    accept=".csv,text/csv"
+                    :label="__('CSV file')"
+                />
+                @error('csvInviteUpload')
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+                <div wire:loading wire:target="csvInviteUpload" class="mt-2 text-sm text-zinc-500">
+                    {{ __('Parsing CSV...') }}
+                </div>
+            </div>
+
+            @if ($csvInviteShowPreview && $csvInviteRows !== [])
+                <div class="space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <flux:heading size="sm">{{ __('Preview') }}</flux:heading>
+                        @php
+                            $validCount = collect($csvInviteRows)->where('valid', true)->count();
+                            $invalidCount = count($csvInviteRows) - $validCount;
+                        @endphp
+                        <flux:text class="text-sm">
+                            {{ __(':valid valid, :invalid with errors', ['valid' => $validCount, 'invalid' => $invalidCount]) }}
+                        </flux:text>
+                    </div>
+
+                    <div class="max-h-80 overflow-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
+                        <table class="w-full text-left text-sm">
+                            <thead class="sticky top-0 border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800">
+                                <tr>
+                                    <th class="px-3 py-2">{{ __('Line') }}</th>
+                                    <th class="px-3 py-2">{{ __('Name') }}</th>
+                                    <th class="px-3 py-2">{{ __('Email') }}</th>
+                                    <th class="px-3 py-2 hidden md:table-cell">{{ __('Roles') }}</th>
+                                    <th class="px-3 py-2 hidden lg:table-cell">{{ __('Tags') }}</th>
+                                    <th class="px-3 py-2 hidden lg:table-cell">{{ __('Membership') }}</th>
+                                    <th class="px-3 py-2">{{ __('Status') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                                @foreach ($csvInviteRows as $row)
+                                    <tr wire:key="csv-row-{{ $row['line'] }}" @class([
+                                        'bg-red-50/60 dark:bg-red-950/20' => ! $row['valid'],
+                                    ])>
+                                        <td class="px-3 py-2 text-zinc-500">{{ $row['line'] }}</td>
+                                        <td class="px-3 py-2">{{ $row['name'] }}</td>
+                                        <td class="px-3 py-2">{{ $row['email'] }}</td>
+                                        <td class="px-3 py-2 hidden md:table-cell">{{ $row['roles_display'] ?: '—' }}</td>
+                                        <td class="px-3 py-2 hidden lg:table-cell">{{ $row['tags_display'] ?: '—' }}</td>
+                                        <td class="px-3 py-2 hidden lg:table-cell">{{ $row['membership_display'] ?: '—' }}</td>
+                                        <td class="px-3 py-2">
+                                            @if ($row['valid'])
+                                                <span class="text-green-700 dark:text-green-400">{{ __('Ready') }}</span>
+                                            @else
+                                                <ul class="list-inside list-disc text-red-700 dark:text-red-400">
+                                                    @foreach ($row['errors'] as $error)
+                                                        <li>{{ $error }}</li>
+                                                    @endforeach
+                                                </ul>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
+
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" variant="ghost" wire:click="closeCsvInviteModal">{{ __('Cancel') }}</flux:button>
+                <flux:button
+                    type="button"
+                    variant="primary"
+                    wire:click="confirmCsvInvite"
+                    :disabled="! $csvInviteShowPreview || collect($csvInviteRows)->where('valid', true)->isEmpty()"
+                >
+                    {{ __('Send invitations') }}
+                </flux:button>
+            </div>
+        </div>
     </flux:modal>
 
     <flux:modal wire:model="showRoleModal" class="md:max-w-2xl">

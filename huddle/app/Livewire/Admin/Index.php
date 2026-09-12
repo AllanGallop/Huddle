@@ -16,6 +16,8 @@ use App\Notifications\UserInvitationNotification;
 use App\Services\ApplicationUpdateService;
 use App\Services\BrandingService;
 use App\Services\RoleService;
+use App\Services\UserCsvInviteService;
+use App\Services\UserInvitationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -35,6 +37,15 @@ class Index extends Component
     public string $activeTab = 'users';
 
     public bool $showUserModal = false;
+
+    public bool $showCsvInviteModal = false;
+
+    public $csvInviteUpload = null;
+
+    public bool $csvInviteShowPreview = false;
+
+    /** @var list<array<string, mixed>> */
+    public array $csvInviteRows = [];
 
     public ?int $editingUserId = null;
 
@@ -299,22 +310,90 @@ class Index extends Component
             ...$this->profileRules(),
             'assignedRoleIds' => ['required', 'array', 'min:1'],
             'assignedRoleIds.*' => ['integer', 'exists:roles,id'],
+            'assignedFlagIds' => ['array'],
+            'assignedFlagIds.*' => ['integer', 'exists:user_flags,id'],
         ]);
 
-        $user = new User([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make(Str::password(32)),
-        ]);
-        $user->save();
-        $user->roles()->sync($validated['assignedRoleIds']);
-
-        $this->sendInvitationEmail($user);
-        $this->syncUserFlags($user);
+        $user = app(UserInvitationService::class)->invite(
+            $validated['name'],
+            $validated['email'],
+            $validated['assignedRoleIds'],
+            $validated['assignedFlagIds'] ?? [],
+        );
 
         $this->closeUserModal();
         unset($this->users);
         session()->flash('status', __('Invitation sent. :name can set their password via the email link.', ['name' => $user->name]));
+    }
+
+    public function openCsvInviteModal(): void
+    {
+        $this->resetCsvInviteForm();
+        $this->showCsvInviteModal = true;
+    }
+
+    public function closeCsvInviteModal(): void
+    {
+        $this->showCsvInviteModal = false;
+        $this->resetCsvInviteForm();
+    }
+
+    public function updatedCsvInviteUpload(): void
+    {
+        $this->parseCsvInviteUpload();
+    }
+
+    public function parseCsvInviteUpload(): void
+    {
+        $this->validate([
+            'csvInviteUpload' => ['required', 'file', 'mimes:csv,txt', 'max:1024'],
+        ]);
+
+        try {
+            $result = app(UserCsvInviteService::class)->parse($this->csvInviteUpload->getRealPath());
+        } catch (\InvalidArgumentException $exception) {
+            $this->addError('csvInviteUpload', $exception->getMessage());
+            $this->csvInviteRows = [];
+            $this->csvInviteShowPreview = false;
+
+            return;
+        }
+
+        $this->csvInviteRows = $result['rows'];
+        $this->csvInviteShowPreview = true;
+        $this->resetValidation('csvInviteUpload');
+    }
+
+    public function confirmCsvInvite(): void
+    {
+        $validRows = array_values(array_filter(
+            $this->csvInviteRows,
+            fn (array $row) => $row['valid'],
+        ));
+
+        if ($validRows === []) {
+            $this->addError('csvInviteUpload', __('No valid rows to import.'));
+
+            return;
+        }
+
+        $result = app(UserCsvInviteService::class)->importValidRows($validRows);
+
+        $skipped = count($this->csvInviteRows) - count($validRows);
+        $this->closeCsvInviteModal();
+        unset($this->users, $this->membershipAssignments);
+
+        $message = __(':count invitation(s) sent.', ['count' => $result['invited']]);
+
+        if ($skipped > 0) {
+            $message .= ' '.__(':count row(s) skipped due to validation errors.', ['count' => $skipped]);
+        }
+
+        if ($result['failed'] !== []) {
+            $message .= ' '.__(':count row(s) failed during import.', ['count' => count($result['failed'])]);
+        }
+
+        session()->flash('status', $message);
     }
 
     public function resendInvitation(int $userId): void
@@ -936,6 +1015,18 @@ class Index extends Component
         $this->assignedRoleIds = [];
         $this->assignedFlagIds = [];
         $this->userModalMode = 'add';
+    }
+
+    protected function resetCsvInviteForm(): void
+    {
+        $this->reset([
+            'csvInviteUpload',
+            'csvInviteRows',
+            'csvInviteShowPreview',
+        ]);
+        $this->csvInviteRows = [];
+        $this->csvInviteShowPreview = false;
+        $this->resetValidation();
     }
 
     public function render()
