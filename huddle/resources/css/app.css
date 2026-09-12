@@ -73,12 +73,16 @@
     }
 
     html:not(.dark) .border-zinc-200 {
-        @apply border-zinc-300;
+        @apply border-teal-200/80;
     }
 
-    html:not(.dark) .rounded-xl.border.bg-white,
-    html:not(.dark) .rounded-xl.border.bg-zinc-50 {
-        @apply shadow-sm shadow-zinc-300/40;
+    html:not(.dark) .rounded-xl.border.bg-white {
+        @apply border-teal-200/70 bg-white/90 shadow-sm shadow-teal-900/5;
+    }
+
+    html:not(.dark) .rounded-xl.border.bg-zinc-50,
+    html:not(.dark) .rounded-xl.border.bg-zinc-50\/80 {
+        @apply border-teal-200/80 bg-teal-50/70 shadow-sm shadow-teal-900/5;
     }
 
     html:not(.dark) [data-flux-heading] {
@@ -107,7 +111,38 @@
     }
 
     html:not(.dark) .hover\:bg-zinc-50:hover {
-        @apply bg-zinc-100;
+        @apply bg-teal-50/80;
+    }
+
+    /* Dark mode: teal-tinted surfaces instead of flat charcoal */
+    .dark .border-zinc-700 {
+        @apply border-teal-900/45;
+    }
+
+    .dark .rounded-xl.border.bg-zinc-900,
+    .dark .rounded-xl.border.dark\:bg-zinc-900 {
+        @apply border-teal-800/40 bg-zinc-900/75 shadow-lg shadow-black/20;
+    }
+
+    .dark .rounded-xl.border.bg-zinc-50\/80,
+    .dark .rounded-xl.border.dark\:bg-zinc-800\/40 {
+        @apply border-teal-800/40 bg-teal-950/35;
+    }
+
+    .dark .hover\:bg-zinc-800\/50:hover,
+    .dark .hover\:bg-zinc-800\/60:hover {
+        @apply bg-teal-950/40;
+    }
+
+    /* Section tabs and control strips */
+    html:not(.dark) nav[aria-label].rounded-lg.border.bg-zinc-50,
+    html:not(.dark) .rounded-lg.border.border-zinc-200.bg-zinc-50 {
+        @apply border-teal-200/80 bg-gradient-to-r from-teal-50 via-white to-amber-50/60;
+    }
+
+    .dark nav[aria-label].rounded-lg.border.bg-zinc-50,
+    .dark .rounded-lg.border.dark\:bg-zinc-800\/60 {
+        @apply border-teal-800/50 bg-gradient-to-r from-teal-950/50 via-zinc-900 to-amber-950/20;
     }
 }
 

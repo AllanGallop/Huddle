@@ -4,7 +4,7 @@
             <x-material-icon name="admin_panel_settings" class="text-[1.75rem] text-huddle-primary" />
             {{ __('Admin') }}
         </flux:heading>
-        <flux:text class="mt-1">{{ __('Manage team members, tags, project categories, membership renewals, branding, organisation bank details, and application updates.') }}</flux:text>
+        <flux:text class="mt-1">{{ __('People, tags, membership, and organisation settings.') }}</flux:text>
     </div>
 
     @if (session('status'))
@@ -31,70 +31,42 @@
         </div>
     @enderror
 
-    <nav class="flex gap-1 rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-700 dark:bg-zinc-800/60" aria-label="{{ __('Admin sections') }}">
+    <nav class="flex flex-wrap gap-1 rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-700 dark:bg-zinc-800/60" aria-label="{{ __('Admin sections') }}">
         <button
             type="button"
-            wire:click="setTab('users')"
+            wire:click="setSection('people')"
             @class([
                 'flex-1 rounded-md px-4 py-2 text-sm font-medium transition sm:flex-none',
-                'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $activeTab === 'users',
-                'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $activeTab !== 'users',
+                'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $activeSection === 'people',
+                'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $activeSection !== 'people',
             ])
         >
             <span class="inline-flex items-center justify-center gap-2">
                 <x-material-icon name="group" class="text-[1.125rem]" />
-                {{ __('Users') }}
+                {{ __('People') }}
             </span>
         </button>
         <button
             type="button"
-            wire:click="setTab('roles')"
+            wire:click="setSection('taxonomy')"
             @class([
                 'flex-1 rounded-md px-4 py-2 text-sm font-medium transition sm:flex-none',
-                'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $activeTab === 'roles',
-                'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $activeTab !== 'roles',
-            ])
-        >
-            <span class="inline-flex items-center justify-center gap-2">
-                <x-material-icon name="shield_person" class="text-[1.125rem]" />
-                {{ __('Roles') }}
-            </span>
-        </button>
-        <button
-            type="button"
-            wire:click="setTab('tags')"
-            @class([
-                'flex-1 rounded-md px-4 py-2 text-sm font-medium transition sm:flex-none',
-                'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $activeTab === 'tags',
-                'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $activeTab !== 'tags',
+                'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $activeSection === 'taxonomy',
+                'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $activeSection !== 'taxonomy',
             ])
         >
             <span class="inline-flex items-center justify-center gap-2">
                 <x-material-icon name="sell" class="text-[1.125rem]" />
-                {{ __('Tags') }}
+                {{ __('Taxonomy') }}
             </span>
         </button>
         <button
             type="button"
-            wire:click="setTab('categories')"
+            wire:click="setSection('membership')"
             @class([
                 'flex-1 rounded-md px-4 py-2 text-sm font-medium transition sm:flex-none',
-                'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $activeTab === 'categories',
-                'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $activeTab !== 'categories',
-            ])
-        >
-            <span class="inline-flex items-center justify-center gap-2">
-                <x-material-icon name="category" class="text-[1.125rem]" />
-                {{ __('Categories') }}
-            </span>
-        </button>
-        <button
-            type="button"
-            wire:click="setTab('membership')"
-            @class([
-                'flex-1 rounded-md px-4 py-2 text-sm font-medium transition sm:flex-none',
-                'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $activeTab === 'membership',
-                'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $activeTab !== 'membership',
+                'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $activeSection === 'membership',
+                'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $activeSection !== 'membership',
             ])
         >
             <span class="inline-flex items-center justify-center gap-2">
@@ -104,74 +76,135 @@
         </button>
         <button
             type="button"
-            wire:click="setTab('branding')"
+            wire:click="setSection('organisation')"
             @class([
                 'flex-1 rounded-md px-4 py-2 text-sm font-medium transition sm:flex-none',
-                'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $activeTab === 'branding',
-                'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $activeTab !== 'branding',
+                'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $activeSection === 'organisation',
+                'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $activeSection !== 'organisation',
             ])
         >
             <span class="inline-flex items-center justify-center gap-2">
-                <x-material-icon name="palette" class="text-[1.125rem]" />
-                {{ __('Branding') }}
-            </span>
-        </button>
-        <button
-            type="button"
-            wire:click="setTab('bank')"
-            @class([
-                'flex-1 rounded-md px-4 py-2 text-sm font-medium transition sm:flex-none',
-                'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $activeTab === 'bank',
-                'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $activeTab !== 'bank',
-            ])
-        >
-            <span class="inline-flex items-center justify-center gap-2">
-                <x-material-icon name="account_balance" class="text-[1.125rem]" />
-                {{ __('Bank details') }}
-            </span>
-        </button>
-        <button
-            type="button"
-            wire:click="setTab('updates')"
-            @class([
-                'flex-1 rounded-md px-4 py-2 text-sm font-medium transition sm:flex-none',
-                'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white' => $activeTab === 'updates',
-                'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $activeTab !== 'updates',
-            ])
-        >
-            <span class="inline-flex items-center justify-center gap-2">
-                <x-material-icon name="system_update_alt" class="text-[1.125rem]" />
-                {{ __('Updates') }}
+                <x-material-icon name="business" class="text-[1.125rem]" />
+                {{ __('Organisation') }}
             </span>
         </button>
     </nav>
+
+    @if ($activeSection === 'people')
+        <nav class="flex gap-1 border-b border-zinc-200 dark:border-zinc-700" aria-label="{{ __('People') }}">
+            <button
+                type="button"
+                wire:click="setTab('users')"
+                @class([
+                    'px-3 py-2 text-sm font-medium transition border-b-2 -mb-px',
+                    'border-huddle-primary text-huddle-primary' => $activeTab === 'users',
+                    'border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200' => $activeTab !== 'users',
+                ])
+            >
+                {{ __('Users') }}
+            </button>
+            <button
+                type="button"
+                wire:click="setTab('roles')"
+                @class([
+                    'px-3 py-2 text-sm font-medium transition border-b-2 -mb-px',
+                    'border-huddle-primary text-huddle-primary' => $activeTab === 'roles',
+                    'border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200' => $activeTab !== 'roles',
+                ])
+            >
+                {{ __('Roles') }}
+            </button>
+        </nav>
+    @elseif ($activeSection === 'taxonomy')
+        <nav class="flex gap-1 border-b border-zinc-200 dark:border-zinc-700" aria-label="{{ __('Taxonomy') }}">
+            <button
+                type="button"
+                wire:click="setTab('tags')"
+                @class([
+                    'px-3 py-2 text-sm font-medium transition border-b-2 -mb-px',
+                    'border-huddle-primary text-huddle-primary' => $activeTab === 'tags',
+                    'border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200' => $activeTab !== 'tags',
+                ])
+            >
+                {{ __('Tags') }}
+            </button>
+            <button
+                type="button"
+                wire:click="setTab('categories')"
+                @class([
+                    'px-3 py-2 text-sm font-medium transition border-b-2 -mb-px',
+                    'border-huddle-primary text-huddle-primary' => $activeTab === 'categories',
+                    'border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200' => $activeTab !== 'categories',
+                ])
+            >
+                {{ __('Project categories') }}
+            </button>
+        </nav>
+    @elseif ($activeSection === 'organisation')
+        <nav class="flex gap-1 border-b border-zinc-200 dark:border-zinc-700" aria-label="{{ __('Organisation') }}">
+            <button
+                type="button"
+                wire:click="setTab('branding')"
+                @class([
+                    'px-3 py-2 text-sm font-medium transition border-b-2 -mb-px',
+                    'border-huddle-primary text-huddle-primary' => $activeTab === 'branding',
+                    'border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200' => $activeTab !== 'branding',
+                ])
+            >
+                {{ __('Branding') }}
+            </button>
+            <button
+                type="button"
+                wire:click="setTab('bank')"
+                @class([
+                    'px-3 py-2 text-sm font-medium transition border-b-2 -mb-px',
+                    'border-huddle-primary text-huddle-primary' => $activeTab === 'bank',
+                    'border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200' => $activeTab !== 'bank',
+                ])
+            >
+                {{ __('Bank details') }}
+            </button>
+            <button
+                type="button"
+                wire:click="setTab('updates')"
+                @class([
+                    'px-3 py-2 text-sm font-medium transition border-b-2 -mb-px',
+                    'border-huddle-primary text-huddle-primary' => $activeTab === 'updates',
+                    'border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200' => $activeTab !== 'updates',
+                ])
+            >
+                {{ __('Updates') }}
+            </button>
+        </nav>
+    @endif
 
     @if ($activeTab === 'users')
         <div class="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
             <div class="flex flex-col gap-4 border-b border-zinc-200 p-4 dark:border-zinc-700 sm:flex-row sm:items-center sm:justify-between sm:p-5">
                 <div>
-                    <flux:heading size="lg">{{ __('Team members') }}</flux:heading>
-                    <flux:text class="mt-1 text-sm">{{ __(':count users', ['count' => $this->users->count()]) }}</flux:text>
+                    <flux:heading size="lg">{{ __('Users') }}</flux:heading>
+                    <flux:text class="mt-1 text-sm">{{ __(':count people', ['count' => $this->users->count()]) }}</flux:text>
                 </div>
-                <div class="flex flex-wrap gap-2">
-                    <flux:button variant="ghost" wire:click="openCsvInviteModal">
-                        <span class="inline-flex items-center gap-2">
-                            <x-material-icon name="upload_file" class="text-[1.25rem]" />
-                            {{ __('Invite via CSV') }}
-                        </span>
-                    </flux:button>
-                    <flux:button variant="ghost" wire:click="openCreateUserModal('invite')">
-                        <span class="inline-flex items-center gap-2">
-                            <x-material-icon name="mail" class="text-[1.25rem]" />
-                            {{ __('Invite user') }}
-                        </span>
-                    </flux:button>
-                    <flux:button variant="primary" wire:click="openCreateUserModal('add')">
+                <div class="flex flex-wrap items-center gap-2">
+                    <flux:button variant="primary" wire:click="openCreateUserModal('invite')">
                         <span class="inline-flex items-center gap-2">
                             <x-material-icon name="person_add" class="text-[1.25rem]" />
-                            {{ __('Add user') }}
+                            {{ __('Invite people') }}
                         </span>
                     </flux:button>
+                    <flux:dropdown>
+                        <flux:button variant="ghost" icon-trailing="chevron-down">
+                            {{ __('More') }}
+                        </flux:button>
+                        <flux:menu>
+                            <flux:menu.item wire:click="openCsvInviteModal" icon="document-arrow-up">
+                                {{ __('Invite via CSV') }}
+                            </flux:menu.item>
+                            <flux:menu.item wire:click="openCreateUserModal('add')" icon="key">
+                                {{ __('Add without email') }}
+                            </flux:menu.item>
+                        </flux:menu>
+                    </flux:dropdown>
                 </div>
             </div>
 
@@ -220,7 +253,7 @@
                                     @if ($user->flags->isEmpty())
                                         <span class="text-zinc-400">—</span>
                                     @else
-                                        <div class="flex flex-wrap gap-1">
+                                        <div class="flex flex-wrap gap-1.5">
                                             @foreach ($user->flags as $flag)
                                                 <x-user-flag-badge :name="$flag->name" wire:key="user-{{ $user->id }}-flag-{{ $flag->id }}" />
                                             @endforeach
@@ -477,7 +510,7 @@
                     'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $membershipTab !== 'periods',
                 ])
             >
-                {{ __('Periods') }}
+                {{ __('Membership years') }}
             </button>
             <button
                 type="button"
@@ -488,7 +521,7 @@
                     'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' => $membershipTab !== 'assignments',
                 ])
             >
-                {{ __('Assignments') }}
+                {{ __('Who’s covered') }}
             </button>
         </nav>
 
@@ -496,20 +529,20 @@
             <div class="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
                 <div class="flex flex-col gap-4 border-b border-zinc-200 p-4 dark:border-zinc-700 sm:flex-row sm:items-center sm:justify-between sm:p-5">
                     <div>
-                        <flux:heading size="lg">{{ __('Membership periods') }}</flux:heading>
-                        <flux:text class="mt-1 text-sm">{{ __('Yearly membership renewals (e.g. 2026, 2025).') }}</flux:text>
+                        <flux:heading size="lg">{{ __('Membership years') }}</flux:heading>
+                        <flux:text class="mt-1 text-sm">{{ __('Define each membership year (e.g. 2026) and its dates.') }}</flux:text>
                     </div>
                     <flux:button variant="primary" wire:click="openCreateRenewalModal">
                         <span class="inline-flex items-center gap-2">
                             <x-material-icon name="add" class="text-[1.25rem]" />
-                            {{ __('Add period') }}
+                            {{ __('Add year') }}
                         </span>
                     </flux:button>
                 </div>
 
                 @if ($this->membershipRenewals->isEmpty())
                     <div class="px-5 py-12 text-center">
-                        <flux:text>{{ __('No membership periods yet. Create one to assign to members.') }}</flux:text>
+                        <flux:text>{{ __('No membership years yet. Add one to cover members.') }}</flux:text>
                     </div>
                 @else
                     <div class="overflow-x-auto">
@@ -568,8 +601,8 @@
             <div class="rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
                 <div class="flex flex-col gap-4 border-b border-zinc-200 p-4 dark:border-zinc-700 sm:flex-row sm:items-center sm:justify-between sm:p-5">
                     <div>
-                        <flux:heading size="lg">{{ __('Member assignments') }}</flux:heading>
-                        <flux:text class="mt-1 text-sm">{{ __('Link members to a membership period.') }}</flux:text>
+                        <flux:heading size="lg">{{ __('Who’s covered') }}</flux:heading>
+                        <flux:text class="mt-1 text-sm">{{ __('Choose which members are covered for each membership year.') }}</flux:text>
                     </div>
                     <flux:button
                         variant="primary"
@@ -578,14 +611,14 @@
                     >
                         <span class="inline-flex items-center gap-2">
                             <x-material-icon name="person_add" class="text-[1.25rem]" />
-                            {{ __('Assign membership') }}
+                            {{ __('Cover a member') }}
                         </span>
                     </flux:button>
                 </div>
 
                 @if ($this->membershipAssignments->isEmpty())
                     <div class="px-5 py-12 text-center">
-                        <flux:text>{{ __('No assignments yet. Assign a membership period to a member.') }}</flux:text>
+                        <flux:text>{{ __('No one covered yet. Add a membership year first, then cover members.') }}</flux:text>
                     </div>
                 @else
                     <div class="overflow-x-auto">
@@ -593,8 +626,8 @@
                             <thead class="border-b border-zinc-200 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-700">
                                 <tr>
                                     <th class="px-5 py-3">{{ __('Member') }}</th>
-                                    <th class="px-5 py-3">{{ __('Period') }}</th>
-                                    <th class="px-5 py-3">{{ __('Membership') }}</th>
+                                    <th class="px-5 py-3">{{ __('Year') }}</th>
+                                    <th class="px-5 py-3">{{ __('Status') }}</th>
                                     <th class="px-5 py-3 text-end">{{ __('Actions') }}</th>
                                 </tr>
                             </thead>
@@ -854,9 +887,9 @@
                     @if ($userModalMode === 'edit')
                         {{ __('Edit user') }}
                     @elseif ($userModalMode === 'invite')
-                        {{ __('Invite user') }}
+                        {{ __('Invite people') }}
                     @else
-                        {{ __('Add user') }}
+                        {{ __('Add without email') }}
                     @endif
                 </flux:heading>
                 <flux:text class="mt-1">
@@ -865,7 +898,7 @@
                     @elseif ($userModalMode === 'edit')
                         {{ __('Update details or set a new password.') }}
                     @else
-                        {{ __('Create an account with a password you share securely.') }}
+                        {{ __('Create an account with a password you share securely. No invitation email is sent.') }}
                     @endif
                 </flux:text>
             </div>
@@ -1183,4 +1216,5 @@ Jane Doe,jane@example.com,member,Mentor;Committee,2026</pre>
             </div>
         </form>
     </flux:modal>
+
 </div>

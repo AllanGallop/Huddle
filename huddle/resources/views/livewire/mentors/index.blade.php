@@ -1,11 +1,13 @@
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <div>
         <flux:heading size="xl" class="inline-flex items-center gap-2">
-            <x-material-icon name="school" class="text-[1.75rem] text-huddle-primary" />
-            {{ __('Mentors') }}
+            <x-material-icon name="verified" class="text-[1.75rem] text-huddle-primary" />
+            {{ __('Accreditations') }}
         </flux:heading>
-        <flux:text class="mt-1">{{ __('Manage accreditations and assign them to community members.') }}</flux:text>
+        <flux:text class="mt-1">{{ __('Create accreditation types, assign members, and set mentors.') }}</flux:text>
     </div>
+
+    <x-accreditations-mode-nav mode="manage" />
 
     @if (session('status'))
         <div class="rounded-lg border border-huddle-comp/40 bg-huddle-comp/10 px-4 py-3 text-sm text-zinc-800 dark:text-zinc-200">
@@ -13,7 +15,7 @@
         </div>
     @endif
 
-    <nav class="flex gap-1 rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-700 dark:bg-zinc-800/60" aria-label="{{ __('Mentor sections') }}">
+    <nav class="flex gap-1 rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-700 dark:bg-zinc-800/60" aria-label="{{ __('Manage sections') }}">
         <button
             type="button"
             wire:click="setTab('accreditations')"

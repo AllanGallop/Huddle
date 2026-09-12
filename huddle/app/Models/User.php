@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
@@ -26,6 +27,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'avatar_path',
         'password',
         'digest_opt_out',
         'last_digest_sent_at',
@@ -71,6 +73,26 @@ class User extends Authenticatable
             ->take(2)
             ->map(fn ($word) => Str::substr($word, 0, 1))
             ->implode('');
+    }
+
+    public function avatarUrl(): ?string
+    {
+        if (! filled($this->avatar_path)) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->avatar_path);
+    }
+
+    public function deleteAvatarFile(): void
+    {
+        if (! filled($this->avatar_path)) {
+            return;
+        }
+
+        if (Storage::disk('public')->exists($this->avatar_path)) {
+            Storage::disk('public')->delete($this->avatar_path);
+        }
     }
 
     public function roles(): BelongsToMany

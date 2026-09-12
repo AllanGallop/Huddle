@@ -60,6 +60,28 @@
         <flux:heading size="sm">{{ __('Documents') }}</flux:heading>
         <flux:text class="text-sm">{{ __('Open branded quote or invoice pages to print, download a PDF, or email as an attachment.') }}</flux:text>
 
+        @if ($project->customer)
+            <div class="rounded-lg border border-zinc-200 bg-zinc-50/80 px-4 py-3 text-sm dark:border-zinc-600 dark:bg-zinc-800/40">
+                <p class="font-medium text-zinc-900 dark:text-white">{{ __('Bill to') }}: {{ $project->customer->name }}</p>
+                <p class="mt-0.5 text-xs text-zinc-500">{{ $project->customer->typeLabel() }}</p>
+                @if ($project->customer->email || $project->customer->telephone || $project->customer->address)
+                    <div class="mt-1 space-y-0.5 text-zinc-600 dark:text-zinc-300">
+                        @if ($project->customer->email)
+                            <p>{{ $project->customer->email }}</p>
+                        @endif
+                        @if ($project->customer->telephone)
+                            <p>{{ $project->customer->telephone }}</p>
+                        @endif
+                        @if ($project->customer->address)
+                            <p class="whitespace-pre-line">{{ $project->customer->address }}</p>
+                        @endif
+                    </div>
+                @endif
+            </div>
+        @else
+            <flux:text class="text-sm text-zinc-500">{{ __('No customer on this project — quotes and invoices will omit a Bill to section.') }}</flux:text>
+        @endif
+
         <flux:input wire:model="documentEmail" type="email" :label="__('Send PDF to')" class="max-w-md" />
 
         <div class="grid gap-4 lg:grid-cols-2">

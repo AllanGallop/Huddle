@@ -10,5 +10,10 @@
     'ring-huddle-comp' => $status === 'active',
     'ring-zinc-400 dark:ring-zinc-500' => $status === 'expired',
 ])>
-    <flux:avatar :name="$user->name" :initials="$user->initials()" :size="$size" />
+    <flux:avatar
+        :name="$user->name"
+        :initials="$user->initials()"
+        :size="$size"
+        :src="$user->avatarUrl()"
+    />
 </div>

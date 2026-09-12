@@ -31,6 +31,7 @@ class Project extends Model
         'description',
         'created_by',
         'leader_id',
+        'customer_id',
         'volunteer_required',
         'project_status',
         'due_date',
@@ -75,6 +76,11 @@ class Project extends Model
         return $this->belongsTo(User::class, 'leader_id')->withDefault([
             'name' => __('Former member'),
         ]);
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
     }
 
     public function comments(): HasMany

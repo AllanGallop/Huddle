@@ -2,16 +2,14 @@
     <flux:sidebar.profile
         {{ $attributes->only('name') }}
         :initials="auth()->user()->initials()"
+        :avatar="auth()->user()->avatarUrl()"
         icon:trailing="chevrons-up-down"
         data-test="sidebar-menu-button"
     />
 
     <flux:menu>
         <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
-            <flux:avatar
-                :name="auth()->user()->name"
-                :initials="auth()->user()->initials()"
-            />
+            <x-user-avatar :user="auth()->user()" size="sm" />
             <div class="grid flex-1 text-start text-sm leading-tight">
                 <flux:heading class="truncate">{{ auth()->user()->name }}</flux:heading>
                 <flux:text class="truncate">{{ auth()->user()->email }}</flux:text>

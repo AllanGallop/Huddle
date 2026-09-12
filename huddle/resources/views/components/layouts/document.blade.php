@@ -68,6 +68,37 @@
                 letter-spacing: 0.04em;
             }
             .meta { color: #52525b; font-size: 0.875rem; margin-bottom: 2rem; }
+            .parties {
+                display: table;
+                width: 100%;
+                margin-bottom: 2rem;
+                font-size: 0.875rem;
+                color: #52525b;
+            }
+            .parties-col {
+                display: table-cell;
+                width: 50%;
+                vertical-align: top;
+                padding-right: 1.5rem;
+            }
+            .parties-col:last-child { padding-right: 0; padding-left: 1.5rem; }
+            .parties-label {
+                display: block;
+                font-size: 0.7rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: #71717a;
+                margin-bottom: 0.35rem;
+            }
+            .parties-name {
+                font-size: 1rem;
+                font-weight: 600;
+                color: #18181b;
+                margin: 0 0 0.25rem;
+            }
+            .parties-detail { margin: 0; line-height: 1.45; }
+            .parties-detail + .parties-detail { margin-top: 0.15rem; }
             table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
             th, td { text-align: left; padding: 0.625rem 0; border-bottom: 1px solid #e4e4e7; vertical-align: top; }
             th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #71717a; }
@@ -161,7 +192,9 @@
                                     @foreach ($value as $entry)
                                         <input type="hidden" name="{{ $name }}[]" value="{{ $entry }}">
                                     @endforeach
-                                @elseif ($value !== null && $value !== '' && $value !== false)
+                                @elseif (is_bool($value))
+                                    <input type="hidden" name="{{ $name }}" value="{{ $value ? '1' : '0' }}">
+                                @elseif ($value !== null && $value !== '')
                                     <input type="hidden" name="{{ $name }}" value="{{ $value }}">
                                 @endif
                             @endforeach

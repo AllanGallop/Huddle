@@ -11,7 +11,7 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-#[Title('Mentors')]
+#[Title('Accreditations')]
 class Index extends Component
 {
     public string $activeTab = 'accreditations';

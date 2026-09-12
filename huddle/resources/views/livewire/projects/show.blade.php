@@ -2,20 +2,42 @@
     {{-- Header --}}
     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="min-w-0 flex-1">
-            <flux:link :href="route('projects.index')" wire:navigate class="inline-flex items-center gap-1 text-sm">
-                <x-material-icon name="arrow_back" class="text-[1rem]" />
-                {{ __('Back to projects') }}
-            </flux:link>
-            <flux:heading size="xl" class="mt-2">{{ $project->name }}</flux:heading>
-            <div class="mt-3 flex flex-wrap items-center gap-3">
+            <div>
+                <flux:link :href="route('projects.index')" wire:navigate class="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-huddle-primary dark:text-zinc-400">
+                    <x-material-icon name="arrow_back" class="text-[1rem]" />
+                    {{ __('Back to projects') }}
+                </flux:link>
+            </div>
+
+            <div class="mt-4">
+                <p class="font-mono text-sm font-medium tracking-wide text-zinc-500 dark:text-zinc-400">
+                    #{{ $project->formattedId() }}
+                </p>
+                <flux:heading size="xl" class="mt-1">
+                    {{ $project->name }}
+                </flux:heading>
+            </div>
+
+            <div class="mt-3 flex flex-wrap items-center gap-2.5">
                 <x-project-status-badge :status="$project->project_status" />
-                @foreach ($project->categories as $category)
-                    <x-user-flag-badge :name="$category->name" wire:key="show-cat-{{ $category->id }}" />
-                @endforeach
+                @if ($project->categories->isNotEmpty())
+                    <div class="flex flex-wrap gap-1.5">
+                        @foreach ($project->categories as $category)
+                            <x-user-flag-badge :name="$category->name" wire:key="show-cat-{{ $category->id }}" />
+                        @endforeach
+                    </div>
+                @endif
                 <flux:text class="text-sm">
                     {{ __('Led by') }}
                     <x-user-link :user="$project->leader" class="text-zinc-700 dark:text-zinc-200" />
                 </flux:text>
+                @if ($project->customer)
+                    <span class="inline-flex items-center gap-1 text-sm text-zinc-600 dark:text-zinc-300">
+                        <x-material-icon name="storefront" class="text-[1rem] text-huddle-primary" />
+                        {{ $project->customer->name }}
+                        <span class="text-zinc-400">({{ $project->customer->typeLabel() }})</span>
+                    </span>
+                @endif
                 @if ($project->due_date)
                     <span @class([
                         'inline-flex items-center gap-1 text-sm font-medium',
@@ -100,24 +122,99 @@
     @endif
 
     @if (! $this->canManageFinancials || $activeTab === 'overview')
-    {{-- Description --}}
-    <div class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-        <p class="mb-2 text-sm font-medium text-zinc-800 dark:text-white">{{ __('Description') }}</p>
-        <div
-            class="min-h-[10rem] w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm leading-relaxed text-zinc-700 whitespace-pre-wrap dark:border-zinc-600 dark:bg-zinc-800/60 dark:text-zinc-200"
-            role="region"
-            aria-readonly="true"
-        >{{ $project->description }}</div>
+    <div class="grid gap-6 lg:grid-cols-3">
+        {{-- Description --}}
+        <div class="rounded-xl border border-zinc-200 border-s-4 border-s-huddle-primary bg-white p-5 shadow-sm dark:border-zinc-700 dark:border-s-huddle-primary dark:bg-zinc-900 dark:shadow-none lg:col-span-2">
+            <flux:heading size="sm" class="mb-3 inline-flex items-center gap-2">
+                <x-material-icon name="notes" class="text-[1.125rem] text-huddle-primary" />
+                {{ __('Description') }}
+            </flux:heading>
+            <div
+                class="min-h-[10rem] w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50/80 px-4 py-3 text-sm leading-relaxed text-zinc-700 whitespace-pre-wrap dark:border-zinc-600 dark:bg-zinc-800/50 dark:text-zinc-200"
+                role="region"
+                aria-readonly="true"
+            >{{ $project->description }}</div>
+        </div>
+
+        {{-- Details --}}
+        <div class="rounded-xl border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-700 dark:bg-zinc-800/40 lg:self-start">
+            <flux:heading size="sm" class="inline-flex items-center gap-1.5">
+                <x-material-icon name="info" class="text-[1.125rem] text-huddle-primary" />
+                {{ __('Details') }}
+            </flux:heading>
+            <dl class="mt-3 grid gap-x-4 gap-y-2.5 text-sm sm:grid-cols-2">
+                <div>
+                    <dt class="text-xs text-zinc-500">{{ __('Created by') }}</dt>
+                    <dd class="mt-0.5 font-medium text-zinc-900 dark:text-white">{{ $project->creator->name }}</dd>
+                </div>
+                @if ($project->due_date)
+                    <div>
+                        <dt class="text-xs text-zinc-500">{{ __('Due date') }}</dt>
+                        <dd @class([
+                            'mt-0.5 font-medium',
+                            'text-red-600 dark:text-red-400' => $project->isOverdue(),
+                            'text-zinc-900 dark:text-white' => ! $project->isOverdue(),
+                        ])>{{ $project->due_date->format('j M Y') }}</dd>
+                    </div>
+                @endif
+                <div>
+                    <dt class="text-xs text-zinc-500">{{ __('Created') }}</dt>
+                    <dd class="mt-0.5 font-medium text-zinc-900 dark:text-white">{{ $project->created_at->format('j M Y') }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-zinc-500">{{ __('Updated') }}</dt>
+                    <dd class="mt-0.5 font-medium text-zinc-900 dark:text-white">{{ $project->updated_at->format('j M Y') }}</dd>
+                </div>
+                <div class="sm:col-span-2">
+                    <dt class="text-xs text-zinc-500">{{ __('Customer') }}</dt>
+                    <dd class="mt-0.5">
+                        @if ($project->customer)
+                            <p class="font-medium text-zinc-900 dark:text-white">
+                                {{ $project->customer->name }}
+                                <span class="font-normal text-zinc-500">· {{ $project->customer->typeLabel() }}</span>
+                            </p>
+                            <div class="mt-0.5 space-y-0.5 text-xs text-zinc-500">
+                                @if ($project->customer->email)
+                                    <p class="truncate">{{ $project->customer->email }}</p>
+                                @endif
+                                @if ($project->customer->telephone)
+                                    <p>{{ $project->customer->telephone }}</p>
+                                @endif
+                                @if ($project->customer->address)
+                                    <p class="whitespace-pre-line">{{ $project->customer->address }}</p>
+                                @endif
+                            </div>
+                        @else
+                            <span class="text-zinc-400">—</span>
+                        @endif
+                    </dd>
+                </div>
+                <div class="sm:col-span-2">
+                    <dt class="text-xs text-zinc-500">{{ __('Categories') }}</dt>
+                    <dd class="mt-1">
+                        @if ($project->categories->isEmpty())
+                            <span class="text-zinc-400">—</span>
+                        @else
+                            <div class="flex flex-wrap gap-1">
+                                @foreach ($project->categories as $category)
+                                    <x-user-flag-badge :name="$category->name" wire:key="detail-cat-{{ $category->id }}" />
+                                @endforeach
+                            </div>
+                        @endif
+                    </dd>
+                </div>
+            </dl>
+        </div>
     </div>
 
     <div class="grid gap-6 lg:grid-cols-3">
         {{-- Main column: images + comments --}}
         <div class="space-y-6 lg:col-span-2">
             {{-- Image carousel --}}
-            <div class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+            <div class="rounded-xl border border-zinc-200 border-s-4 border-s-huddle-alt bg-white p-5 shadow-sm dark:border-zinc-700 dark:border-s-huddle-alt dark:bg-zinc-900 dark:shadow-none">
                 <div class="flex items-center justify-between gap-3">
                     <flux:heading size="lg" class="inline-flex items-center gap-2">
-                        <x-material-icon name="photo_library" class="text-[1.375rem] text-huddle-primary" />
+                        <x-material-icon name="photo_library" class="text-[1.375rem] text-huddle-alt" />
                         {{ __('Images') }}
                     </flux:heading>
                     @if ($this->images->isNotEmpty())
@@ -222,9 +319,9 @@
             </div>
 
             {{-- Comments --}}
-            <div class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+            <div class="rounded-xl border border-zinc-200 border-s-4 border-s-huddle-comp bg-white p-5 shadow-sm dark:border-zinc-700 dark:border-s-huddle-comp dark:bg-zinc-900 dark:shadow-none">
                 <flux:heading size="lg" class="inline-flex items-center gap-2">
-                    <x-material-icon name="forum" class="text-[1.375rem] text-huddle-primary" />
+                    <x-material-icon name="forum" class="text-[1.375rem] text-huddle-comp" />
                     {{ __('Comments') }}
                 </flux:heading>
 
@@ -253,11 +350,11 @@
             </div>
         </div>
 
-        {{-- Sidebar: volunteers (grouped) + details --}}
+        {{-- Sidebar: volunteers --}}
         <div class="space-y-6">
-            <div class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+            <div class="rounded-xl border border-zinc-200 border-s-4 border-s-huddle-accent bg-white p-5 shadow-sm dark:border-zinc-700 dark:border-s-huddle-accent dark:bg-zinc-900 dark:shadow-none">
                 <flux:heading size="lg" class="inline-flex items-center gap-2">
-                    <x-material-icon name="groups" class="text-[1.375rem] text-huddle-primary" />
+                    <x-material-icon name="groups" class="text-[1.375rem] text-huddle-accent" />
                     {{ __('Volunteers') }}
                 </flux:heading>
                 <flux:text class="mt-1">{{ __(':count people signed up', ['count' => $this->volunteers->count()]) }}</flux:text>
@@ -357,51 +454,6 @@
                     </div>
                 </div>
             </div>
-
-            <div class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-                <flux:heading size="lg" class="inline-flex items-center gap-2">
-                    <x-material-icon name="info" class="text-[1.375rem] text-huddle-primary" />
-                    {{ __('Details') }}
-                </flux:heading>
-                <dl class="mt-4 space-y-3 text-sm">
-                    <div>
-                        <dt class="text-zinc-500">{{ __('Created by') }}</dt>
-                        <dd class="font-medium text-zinc-900 dark:text-white">{{ $project->creator->name }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-zinc-500">{{ __('Categories') }}</dt>
-                        <dd class="mt-1">
-                            @if ($project->categories->isEmpty())
-                                <span class="text-zinc-400">—</span>
-                            @else
-                                <div class="flex flex-wrap gap-1">
-                                    @foreach ($project->categories as $category)
-                                        <x-user-flag-badge :name="$category->name" wire:key="detail-cat-{{ $category->id }}" />
-                                    @endforeach
-                                </div>
-                            @endif
-                        </dd>
-                    </div>
-                    @if ($project->due_date)
-                        <div>
-                            <dt class="text-zinc-500">{{ __('Due date') }}</dt>
-                            <dd @class([
-                                'font-medium',
-                                'text-red-600 dark:text-red-400' => $project->isOverdue(),
-                                'text-zinc-900 dark:text-white' => ! $project->isOverdue(),
-                            ])>{{ $project->due_date->format('j M Y') }}</dd>
-                        </div>
-                    @endif
-                    <div>
-                        <dt class="text-zinc-500">{{ __('Created') }}</dt>
-                        <dd class="font-medium text-zinc-900 dark:text-white">{{ $project->created_at->format('j M Y') }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-zinc-500">{{ __('Last updated') }}</dt>
-                        <dd class="font-medium text-zinc-900 dark:text-white">{{ $project->updated_at->format('j M Y') }}</dd>
-                    </div>
-                </dl>
-            </div>
         </div>
     </div>
     @endif
@@ -456,6 +508,13 @@
                 </flux:select>
 
                 <flux:input wire:model="due_date" type="date" :label="__('Due date (optional)')" />
+
+                <x-customer-select
+                    :customers="$this->customers"
+                    :selected-id="$customer_id"
+                    wire-model="customer_id"
+                    :label="__('Customer (optional)')"
+                />
             </div>
 
             <flux:checkbox wire:model="volunteer_required" :label="__('Volunteers required')" />

@@ -5,6 +5,8 @@ namespace Tests\Feature\Settings;
 use App\Livewire\Settings\Profile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -53,6 +55,37 @@ class ProfileUpdateTest extends TestCase
         $response->assertHasNoErrors();
 
         $this->assertNotNull($user->refresh()->email_verified_at);
+    }
+
+    public function test_user_can_upload_and_remove_profile_photo(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        $file = UploadedFile::fake()->create('avatar.jpg', 100, 'image/jpeg');
+
+        $this->actingAs($user);
+
+        Livewire::test(Profile::class)
+            ->set('photo', $file)
+            ->assertHasNoErrors();
+
+        $user->refresh();
+
+        $this->assertNotNull($user->avatar_path);
+        Storage::disk('public')->assertExists($user->avatar_path);
+        $this->assertNotNull($user->avatarUrl());
+
+        $path = $user->avatar_path;
+
+        Livewire::test(Profile::class)
+            ->call('removePhoto')
+            ->assertHasNoErrors();
+
+        $user->refresh();
+
+        $this->assertNull($user->avatar_path);
+        Storage::disk('public')->assertMissing($path);
     }
 
     public function test_user_can_delete_their_account(): void
