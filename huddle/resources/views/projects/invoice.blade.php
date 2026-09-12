@@ -11,21 +11,18 @@
     :email-action="route('projects.invoice.email', $project)"
     :back-url="route('projects.show', $project)"
     :back-label="__('Back to project')"
-    :recipient-email="$project->leader->email"
+    :recipient-email="$project->customer?->email ?: $project->leader->email"
 >
     <h1>{{ __('Invoice') }}</h1>
     <p class="meta">
-        <strong>{{ $project->name }}</strong><br>
-        {{ __('Project leader') }}: {{ $project->leader->name }}<br>
         @if ($project->invoiced_at)
             {{ __('Invoiced') }}: {{ $project->invoiced_at->format('j F Y') }}
         @else
             {{ __('Date') }}: {{ now()->format('j F Y') }}
         @endif
-        @if ($project->due_date)
-            <br>{{ __('Due date') }}: {{ $project->due_date->format('j F Y') }}
-        @endif
     </p>
+
+    @include('projects.partials.document-parties', ['project' => $project])
 
     <table>
         <thead>

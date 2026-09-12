@@ -127,7 +127,7 @@
                                     @if ($member->flags->isEmpty())
                                         <span class="text-zinc-400">—</span>
                                     @else
-                                        <div class="flex flex-wrap gap-1">
+                                        <div class="flex flex-wrap gap-1.5">
                                             @foreach ($member->flags as $flag)
                                                 <x-user-flag-badge :name="$flag->name" wire:key="member-{{ $member->id }}-flag-{{ $flag->id }}" />
                                             @endforeach

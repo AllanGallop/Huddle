@@ -14,7 +14,7 @@
             <div>
                 <flux:heading size="xl">{{ $profileUser->name }}</flux:heading>
                 <flux:text class="mt-1">
-                    <div class="flex flex-wrap gap-1">
+                    <div class="flex flex-wrap gap-1.5">
                         @forelse ($profileUser->roles as $role)
                             <span @class([
                                 'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',

@@ -8,6 +8,7 @@ use App\Http\Controllers\ProjectReportController;
 use App\Http\Controllers\WikiAssetController;
 use App\Http\Controllers\WikiImageUploadController;
 use App\Livewire\Admin\Index as AdminIndex;
+use App\Livewire\Customers\Index as CustomersIndex;
 use App\Livewire\Dashboard;
 use App\Livewire\Events\Index as EventsIndex;
 use App\Livewire\Events\Show as EventsShow;
@@ -67,6 +68,8 @@ Route::livewire('projects', ProjectsIndex::class)->name('projects.index');
 Route::livewire('projects/{project}', ProjectsShow::class)->name('projects.show');
 
 Route::livewire('reports', ReportsIndex::class)->name('reports.index');
+
+Route::livewire('customers', CustomersIndex::class)->middleware(['admin'])->name('customers.index');
 
 Route::livewire('admin', AdminIndex::class)->middleware(['admin'])->name('admin.index');
 

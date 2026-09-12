@@ -21,30 +21,45 @@
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-            <flux:text>{{ __('Active projects') }}</flux:text>
+        <div class="rounded-xl border border-teal-200/80 border-s-4 border-s-huddle-primary bg-gradient-to-br from-teal-50 to-white p-5 shadow-sm dark:border-teal-800/50 dark:border-s-huddle-primary dark:from-teal-950/40 dark:to-zinc-900">
+            <div class="flex items-center gap-2 text-huddle-primary">
+                <x-material-icon name="folder" class="text-[1.25rem]" />
+                <flux:text class="!text-huddle-primary">{{ __('Active projects') }}</flux:text>
+            </div>
             <p class="mt-3 text-3xl font-semibold text-zinc-900 dark:text-white">{{ $this->projectStats['active'] }}</p>
             <flux:text class="mt-1 text-xs">{{ __('You lead, created, or volunteer on') }}</flux:text>
         </div>
-        <div class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-            <flux:text>{{ __('Leading') }}</flux:text>
-            <p class="mt-3 text-3xl font-semibold text-huddle-primary">{{ $this->projectStats['leading'] }}</p>
+        <div class="rounded-xl border border-amber-200/80 border-s-4 border-s-huddle-alt bg-gradient-to-br from-amber-50 to-white p-5 shadow-sm dark:border-amber-800/40 dark:border-s-huddle-alt dark:from-amber-950/30 dark:to-zinc-900">
+            <div class="flex items-center gap-2 text-amber-800 dark:text-huddle-alt">
+                <x-material-icon name="person" class="text-[1.25rem]" />
+                <flux:text class="!text-amber-800 dark:!text-huddle-alt">{{ __('Leading') }}</flux:text>
+            </div>
+            <p class="mt-3 text-3xl font-semibold text-amber-900 dark:text-huddle-alt">{{ $this->projectStats['leading'] }}</p>
         </div>
-        <div class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-            <flux:text>{{ __('Volunteering') }}</flux:text>
-            <p class="mt-3 text-3xl font-semibold text-huddle-accent">{{ $this->projectStats['volunteering'] }}</p>
+        <div class="rounded-xl border border-fuchsia-200/80 border-s-4 border-s-huddle-accent bg-gradient-to-br from-fuchsia-50 to-white p-5 shadow-sm dark:border-fuchsia-800/40 dark:border-s-huddle-accent dark:from-fuchsia-950/30 dark:to-zinc-900">
+            <div class="flex items-center gap-2 text-fuchsia-800 dark:text-huddle-accent">
+                <x-material-icon name="volunteer_activism" class="text-[1.25rem]" />
+                <flux:text class="!text-fuchsia-800 dark:!text-huddle-accent">{{ __('Volunteering') }}</flux:text>
+            </div>
+            <p class="mt-3 text-3xl font-semibold text-fuchsia-900 dark:text-huddle-accent">{{ $this->projectStats['volunteering'] }}</p>
         </div>
-        <div class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-            <flux:text>{{ __('Recent activity') }}</flux:text>
-            <p class="mt-3 text-3xl font-semibold text-huddle-comp">{{ $this->projectStats['updated'] }}</p>
+        <div class="rounded-xl border border-lime-200/80 border-s-4 border-s-huddle-comp bg-gradient-to-br from-lime-50 to-white p-5 shadow-sm dark:border-lime-800/40 dark:border-s-huddle-comp dark:from-lime-950/25 dark:to-zinc-900">
+            <div class="flex items-center gap-2 text-lime-800 dark:text-huddle-comp">
+                <x-material-icon name="bolt" class="text-[1.25rem]" />
+                <flux:text class="!text-lime-800 dark:!text-huddle-comp">{{ __('Recent activity') }}</flux:text>
+            </div>
+            <p class="mt-3 text-3xl font-semibold text-lime-900 dark:text-huddle-comp">{{ $this->projectStats['updated'] }}</p>
             <flux:text class="mt-1 text-xs">{{ __('Comments, volunteers, and photos') }}</flux:text>
         </div>
     </div>
 
     <div class="grid gap-6 lg:grid-cols-2">
-        <div class="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-            <div class="flex items-center justify-between border-b border-zinc-200 px-5 py-4 dark:border-zinc-700">
-                <flux:heading size="lg">{{ __('Your project updates') }}</flux:heading>
+        <div class="overflow-hidden rounded-xl border border-zinc-200 border-s-4 border-s-huddle-primary bg-white dark:border-zinc-700 dark:border-s-huddle-primary dark:bg-zinc-900">
+            <div class="flex items-center justify-between border-b border-teal-100 bg-teal-50/50 px-5 py-4 dark:border-teal-900/40 dark:bg-teal-950/30">
+                <flux:heading size="lg" class="inline-flex items-center gap-2">
+                    <x-material-icon name="update" class="text-[1.375rem] text-huddle-primary" />
+                    {{ __('Your project updates') }}
+                </flux:heading>
                 <flux:link :href="route('projects.index')" wire:navigate>{{ __('View all') }}</flux:link>
             </div>
             @if ($this->projectUpdates->isEmpty())
@@ -87,7 +102,7 @@
                                     <span>{{ $activity['at']->diffForHumans() }}</span>
                                 </p>
                                 @if ($activity['project']->categories->isNotEmpty())
-                                    <div class="mt-1.5 flex flex-wrap gap-1">
+                                    <div class="mt-1.5 flex flex-wrap gap-1.5">
                                         @foreach ($activity['project']->categories as $category)
                                             <x-user-flag-badge :name="$category->name" wire:key="update-{{ $activity['project']->id }}-cat-{{ $category->id }}" />
                                         @endforeach
@@ -101,10 +116,13 @@
             @endif
         </div>
 
-        <div class="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-            <div class="flex items-center justify-between border-b border-zinc-200 px-5 py-4 dark:border-zinc-700">
+        <div class="overflow-hidden rounded-xl border border-zinc-200 border-s-4 border-s-huddle-alt bg-white dark:border-zinc-700 dark:border-s-huddle-alt dark:bg-zinc-900">
+            <div class="flex items-center justify-between border-b border-amber-100 bg-amber-50/50 px-5 py-4 dark:border-amber-900/40 dark:bg-amber-950/25">
                 <div>
-                    <flux:heading size="lg">{{ __('Upcoming events') }}</flux:heading>
+                    <flux:heading size="lg" class="inline-flex items-center gap-2">
+                        <x-material-icon name="event" class="text-[1.375rem] text-huddle-alt" />
+                        {{ __('Upcoming events') }}
+                    </flux:heading>
                     @if ($this->eventStats['volunteering'] > 0)
                         <flux:text class="mt-0.5 text-xs">
                             {{ trans_choice(':count you are volunteering on|:count you are volunteering on', $this->eventStats['volunteering'], ['count' => $this->eventStats['volunteering']]) }}
@@ -147,9 +165,12 @@
         </div>
     </div>
 
-    <div class="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-        <div class="flex items-center justify-between border-b border-zinc-200 px-5 py-4 dark:border-zinc-700">
-            <flux:heading size="lg">{{ __('Your projects by category') }}</flux:heading>
+    <div class="overflow-hidden rounded-xl border border-zinc-200 border-s-4 border-s-huddle-comp bg-white dark:border-zinc-700 dark:border-s-huddle-comp dark:bg-zinc-900">
+        <div class="flex items-center justify-between border-b border-lime-100 bg-lime-50/50 px-5 py-4 dark:border-lime-900/40 dark:bg-lime-950/20">
+            <flux:heading size="lg" class="inline-flex items-center gap-2">
+                <x-material-icon name="category" class="text-[1.375rem] text-huddle-comp" />
+                {{ __('Your projects by category') }}
+            </flux:heading>
             <flux:link :href="route('projects.index')" wire:navigate>{{ __('Browse all') }}</flux:link>
         </div>
 

@@ -36,6 +36,8 @@ class Index extends Component
 
     public string $activeTab = 'users';
 
+    public string $activeSection = 'people';
+
     public bool $showUserModal = false;
 
     public bool $showCsvInviteModal = false;
@@ -153,11 +155,42 @@ class Index extends Component
         $this->installedVersion = $updates->installedVersion();
     }
 
+    public function setSection(string $section): void
+    {
+        $defaults = [
+            'people' => 'users',
+            'taxonomy' => 'tags',
+            'membership' => 'membership',
+            'organisation' => 'branding',
+        ];
+
+        if (! isset($defaults[$section])) {
+            return;
+        }
+
+        $this->activeSection = $section;
+        $this->activeTab = $defaults[$section];
+    }
+
     public function setTab(string $tab): void
     {
-        if (in_array($tab, ['users', 'roles', 'tags', 'categories', 'membership', 'bank', 'branding', 'updates'], true)) {
-            $this->activeTab = $tab;
+        $sections = [
+            'users' => 'people',
+            'roles' => 'people',
+            'tags' => 'taxonomy',
+            'categories' => 'taxonomy',
+            'membership' => 'membership',
+            'bank' => 'organisation',
+            'branding' => 'organisation',
+            'updates' => 'organisation',
+        ];
+
+        if (! isset($sections[$tab])) {
+            return;
         }
+
+        $this->activeTab = $tab;
+        $this->activeSection = $sections[$tab];
     }
 
     public function setMembershipTab(string $tab): void

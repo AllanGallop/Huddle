@@ -228,6 +228,49 @@ class ProjectStatusReportTest extends TestCase
         });
     }
 
+    public function test_projects_status_report_can_exclude_comments(): void
+    {
+        $user = User::factory()->create();
+        $leader = User::factory()->create();
+
+        $project = $this->createProject($user, $leader, [
+            'name' => 'Quiet project',
+            'project_status' => 'outstanding',
+        ]);
+
+        ProjectComment::create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'parent_comment_id' => null,
+            'comment' => 'Hidden when excluded',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('reports.projects-status', ['include_comments' => '0']))
+            ->assertOk()
+            ->assertSee($project->name)
+            ->assertSee($project->description)
+            ->assertDontSee('Hidden when excluded');
+    }
+
+    public function test_reports_page_shows_preview_and_comment_option(): void
+    {
+        $user = User::factory()->create();
+        $leader = User::factory()->create();
+
+        $this->createProject($user, $leader, [
+            'name' => 'Previewed project',
+            'project_status' => 'in-progress',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('reports.index'))
+            ->assertOk()
+            ->assertSee('Preview')
+            ->assertSee('Include comments under each project description')
+            ->assertSee('Previewed project');
+    }
+
     protected function createProject(User $creator, User $leader, array $attributes = []): Project
     {
         return Project::create([

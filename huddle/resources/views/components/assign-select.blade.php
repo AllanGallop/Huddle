@@ -36,7 +36,7 @@
             x-bind:aria-expanded="open"
         >
             @if ($selectedOptions->isNotEmpty())
-                <span class="flex flex-1 flex-wrap gap-1">
+                <span class="flex flex-1 flex-wrap gap-1.5">
                     @foreach ($selectedOptions as $option)
                         <x-user-flag-badge :name="$option->name" wire:key="selected-option-{{ $option->id }}" />
                     @endforeach

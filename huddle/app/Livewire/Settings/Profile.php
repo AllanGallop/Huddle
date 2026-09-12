@@ -8,14 +8,19 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Livewire\WithFileUploads;
 
 class Profile extends Component
 {
     use ProfileValidationRules;
+    use WithFileUploads;
 
     public string $name = '';
 
     public string $email = '';
+
+    public $photo = null;
 
     /**
      * Mount the component.
@@ -43,6 +48,42 @@ class Profile extends Component
 
         $user->save();
 
+        $this->dispatch('profile-updated', name: $user->name);
+    }
+
+    public function updatedPhoto(): void
+    {
+        $this->uploadPhoto();
+    }
+
+    public function uploadPhoto(): void
+    {
+        $this->validate([
+            'photo' => ['required', 'image', 'max:2048'],
+        ]);
+
+        /** @var TemporaryUploadedFile $photo */
+        $photo = $this->photo;
+        $user = Auth::user();
+
+        $user->deleteAvatarFile();
+
+        $path = $photo->store('avatars/'.$user->id, 'public');
+
+        $user->forceFill(['avatar_path' => $path])->save();
+
+        $this->reset('photo');
+        $this->dispatch('profile-updated', name: $user->name);
+    }
+
+    public function removePhoto(): void
+    {
+        $user = Auth::user();
+
+        $user->deleteAvatarFile();
+        $user->forceFill(['avatar_path' => null])->save();
+
+        $this->reset('photo');
         $this->dispatch('profile-updated', name: $user->name);
     }
 

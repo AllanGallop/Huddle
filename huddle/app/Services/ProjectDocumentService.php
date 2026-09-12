@@ -10,7 +10,7 @@ class ProjectDocumentService
 {
     public function prepareProject(Project $project): Project
     {
-        return $project->load(['leader', 'creator']);
+        return $project->load(['leader', 'creator', 'customer']);
     }
 
     public function quotePdf(Project $project): \Barryvdh\DomPDF\PDF

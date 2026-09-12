@@ -18,7 +18,7 @@
     </div>
 
     {{-- Filters --}}
-    <div class="rounded-xl border border-zinc-200 border-s-4 border-s-huddle-primary bg-white p-4 dark:border-zinc-700 dark:border-s-huddle-primary dark:bg-zinc-900 sm:p-5">
+    <div class="rounded-xl border border-zinc-200 border-s-4 border-s-huddle-primary bg-zinc-50/80 p-4 dark:border-zinc-700 dark:border-s-huddle-primary dark:bg-zinc-800/40 sm:p-5">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <flux:heading size="sm" class="inline-flex items-center gap-2">
                 <x-material-icon name="filter_list" class="text-[1.125rem] text-huddle-primary" />
@@ -46,6 +46,7 @@
             </flux:input>
 
             <flux:select wire:model.live="statusFilter" :label="__('Status')">
+                <flux:select.option value="active">{{ __('Active (hide completed/cancelled)') }}</flux:select.option>
                 <flux:select.option value="">{{ __('All statuses') }}</flux:select.option>
                 @foreach (\App\Models\Project::STATUSES as $status)
                     <flux:select.option :value="$status">{{ str($status)->headline() }}</flux:select.option>
@@ -68,6 +69,13 @@
                 <flux:select.option value="">{{ __('All categories') }}</flux:select.option>
                 @foreach ($this->categories as $category)
                     <flux:select.option :value="$category->id">{{ $category->name }}</flux:select.option>
+                @endforeach
+            </flux:select>
+
+            <flux:select wire:model.live="customerFilter" :label="__('Customer')">
+                <flux:select.option value="">{{ __('All customers') }}</flux:select.option>
+                @foreach ($this->customers as $customer)
+                    <flux:select.option :value="$customer->id">{{ $customer->name }}</flux:select.option>
                 @endforeach
             </flux:select>
 
@@ -95,8 +103,49 @@
         </div>
     </div>
 
+    @if ($this->newestProjects->isNotEmpty())
+        <div class="space-y-3">
+            <div class="flex items-center justify-between gap-3">
+                <flux:heading size="sm" class="inline-flex items-center gap-2">
+                    <x-material-icon name="fiber_new" class="text-[1.25rem] text-huddle-primary" />
+                    {{ __('Newest projects') }}
+                </flux:heading>
+                <flux:text class="text-xs text-zinc-500">{{ __('Up to 4 most recent') }}</flux:text>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                @foreach ($this->newestProjects as $project)
+                    <a
+                        href="{{ route('projects.show', $project) }}"
+                        wire:navigate
+                        wire:key="newest-project-{{ $project->id }}"
+                        class="rounded-xl border border-zinc-200 border-s-4 border-s-huddle-primary bg-white p-4 shadow-sm transition hover:border-huddle-primary/40 hover:bg-teal-50/40 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-teal-950/20"
+                    >
+                        <p class="font-mono text-xs font-semibold tracking-wide text-huddle-primary">#{{ $project->formattedId() }}</p>
+                        <p class="mt-1 truncate font-medium text-zinc-900 dark:text-white">{{ $project->name }}</p>
+                        <div class="mt-2 flex flex-wrap items-center gap-2">
+                            <x-project-status-badge :status="$project->project_status" />
+                            @if ($project->customer)
+                                <span class="truncate text-xs text-zinc-500">{{ $project->customer->name }}</span>
+                            @endif
+                        </div>
+                        @if ($project->categories->isNotEmpty())
+                            <div class="mt-2 flex flex-wrap gap-1.5">
+                                @foreach ($project->categories->take(2) as $category)
+                                    <x-user-flag-badge :name="$category->name" wire:key="newest-{{ $project->id }}-cat-{{ $category->id }}" />
+                                @endforeach
+                                @if ($project->categories->count() > 2)
+                                    <span class="text-xs text-zinc-400">+{{ $project->categories->count() - 2 }}</span>
+                                @endif
+                            </div>
+                        @endif
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     {{-- Table --}}
-    <div class="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+    <div class="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-none">
         @if ($this->projects->isEmpty())
             <div class="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
                 <div class="flex size-14 items-center justify-center rounded-full bg-huddle-primary/10 text-huddle-primary">
@@ -120,14 +169,23 @@
         @else
             <flux:table>
                 <flux:table.columns>
+                    <flux:table.column class="w-20 border-s-4 border-s-transparent">
+                        {{ __('ID') }}
+                    </flux:table.column>
                     <flux:table.column
                         sortable
                         :sorted="$sortBy === 'name'"
                         :direction="$sortBy === 'name' ? $sortDirection : null"
                         wire:click="sort('name')"
-                        class="min-w-[12rem] border-s-4 border-s-transparent"
+                        class="min-w-[12rem]"
                     >
                         {{ __('Project') }}
+                    </flux:table.column>
+                    <flux:table.column class="hidden min-w-[8rem] md:table-cell">
+                        {{ __('Categories') }}
+                    </flux:table.column>
+                    <flux:table.column class="hidden sm:table-cell">
+                        {{ __('Activity') }}
                     </flux:table.column>
                     <flux:table.column
                         sortable
@@ -150,7 +208,7 @@
                         :sorted="$sortBy === 'volunteers'"
                         :direction="$sortBy === 'volunteers' ? $sortDirection : null"
                         wire:click="sort('volunteers')"
-                        class="hidden sm:table-cell"
+                        class="hidden md:table-cell"
                     >
                         {{ __('Volunteers') }}
                     </flux:table.column>
@@ -174,15 +232,6 @@
                             {{ __('Finance') }}
                         </flux:table.column>
                     @endif
-                    <flux:table.column
-                        sortable
-                        :sorted="$sortBy === 'created_at'"
-                        :direction="$sortBy === 'created_at' ? $sortDirection : null"
-                        wire:click="sort('created_at')"
-                        class="hidden lg:table-cell"
-                    >
-                        {{ __('Created') }}
-                    </flux:table.column>
                     <flux:table.column
                         sortable
                         :sorted="$sortBy === 'updated_at'"
@@ -211,49 +260,72 @@
                             class="cursor-pointer transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60"
                             wire:click="viewProject({{ $project->id }})"
                         >
-                            <flux:table.cell variant="strong" @class(['max-w-md border-s-4 ps-3', $statusAccent])>
-                                <div class="min-w-0">
-                                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                        <p class="truncate font-medium text-zinc-900 dark:text-white">
-                                            {{ $project->name }}
+                            <flux:table.cell @class(['border-s-4 ps-3 font-mono text-xs font-semibold tracking-wide text-huddle-primary', $statusAccent])>
+                                #{{ $project->formattedId() }}
+                            </flux:table.cell>
+
+                            <flux:table.cell variant="strong" class="max-w-md">
+                                <div class="min-w-0 space-y-1">
+                                    <p class="truncate font-medium text-zinc-900 dark:text-white">
+                                        {{ $project->name }}
+                                    </p>
+                                    @if ($project->customer)
+                                        <p class="truncate text-xs text-zinc-500">
+                                            {{ $project->customer->name }}
+                                            <span class="text-zinc-400">·</span>
+                                            {{ $project->customer->typeLabel() }}
                                         </p>
+                                    @endif
+                                    <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs sm:hidden">
+                                        <span class="inline-flex items-center gap-1 text-zinc-500">
+                                            <x-material-icon name="chat_bubble" class="text-[0.875rem]" />
+                                            {{ $project->comments_count }}
+                                        </span>
+                                        <span class="inline-flex items-center gap-1 text-zinc-500">
+                                            <x-material-icon name="group" class="text-[0.875rem]" />
+                                            {{ $project->volunteers_count }}
+                                        </span>
+                                        @if ($project->categories->isNotEmpty())
+                                            <span class="truncate text-zinc-500">
+                                                {{ $project->categories->pluck('name')->join(', ') }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </flux:table.cell>
+
+                            <flux:table.cell class="hidden md:table-cell">
+                                @if ($project->categories->isEmpty())
+                                    <span class="text-zinc-400">—</span>
+                                @else
+                                    <div class="flex flex-wrap gap-1.5">
                                         @foreach ($project->categories as $category)
                                             <x-user-flag-badge :name="$category->name" wire:key="project-{{ $project->id }}-cat-{{ $category->id }}" />
                                         @endforeach
                                     </div>
-                                    <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
-                                        <flux:tooltip :content="__('Comments')" position="top">
-                                            <span class="inline-flex items-center gap-1 text-huddle-primary">
-                                                <x-material-icon name="chat_bubble" class="text-[0.875rem]" />
-                                                {{ $project->comments_count }}
-                                            </span>
-                                        </flux:tooltip>
-                                        <flux:tooltip :content="__('Volunteers')" position="top">
-                                            <span class="inline-flex items-center gap-1 text-huddle-accent">
-                                                <x-material-icon name="group" class="text-[0.875rem]" />
-                                                {{ $project->volunteers_count }}
-                                            </span>
-                                        </flux:tooltip>
-                                        <flux:tooltip :content="__('Images')" position="top">
-                                            <span class="inline-flex items-center gap-1 text-huddle-alt">
-                                                <x-material-icon name="image" class="text-[0.875rem]" />
-                                                {{ $project->images_count }}
-                                            </span>
-                                        </flux:tooltip>
-                                        <span class="inline-flex items-center gap-1 text-zinc-400 lg:hidden">
-                                            <x-material-icon name="calendar_today" class="text-[0.875rem]" />
-                                            {{ $project->created_at->format('j M Y') }}
-                                            @if ($project->updated_at->ne($project->created_at))
-                                                · {{ $project->updated_at->format('j M Y') }}
-                                            @endif
+                                @endif
+                            </flux:table.cell>
+
+                            <flux:table.cell class="hidden sm:table-cell">
+                                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                    <flux:tooltip :content="__('Comments')" position="top">
+                                        <span class="inline-flex items-center gap-1">
+                                            <x-material-icon name="chat_bubble" class="text-[0.875rem] text-huddle-primary" />
+                                            {{ $project->comments_count }}
                                         </span>
-                                        @if ($project->volunteer_required)
-                                            <span class="inline-flex items-center gap-1 rounded-full bg-huddle-accent/15 px-2 py-0.5 text-xs font-medium text-huddle-accent sm:hidden">
-                                                <x-material-icon name="volunteer_activism" class="text-[0.875rem]" />
-                                                {{ __('Wanted') }}
-                                            </span>
-                                        @endif
-                                    </div>
+                                    </flux:tooltip>
+                                    <flux:tooltip :content="__('Volunteers')" position="top">
+                                        <span class="inline-flex items-center gap-1">
+                                            <x-material-icon name="group" class="text-[0.875rem] text-huddle-accent" />
+                                            {{ $project->volunteers_count }}
+                                        </span>
+                                    </flux:tooltip>
+                                    <flux:tooltip :content="__('Images')" position="top">
+                                        <span class="inline-flex items-center gap-1">
+                                            <x-material-icon name="image" class="text-[0.875rem] text-huddle-alt" />
+                                            {{ $project->images_count }}
+                                        </span>
+                                    </flux:tooltip>
                                 </div>
                             </flux:table.cell>
 
@@ -268,9 +340,9 @@
                                 <x-project-status-badge :status="$project->project_status" />
                             </flux:table.cell>
 
-                            <flux:table.cell class="hidden sm:table-cell">
+                            <flux:table.cell class="hidden md:table-cell">
                                 @if ($project->volunteer_required)
-                                    <span class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-huddle-accent/15 px-2.5 py-0.5 text-xs font-medium text-huddle-accent">
+                                    <span class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-huddle-accent/20 px-2.5 py-0.5 text-xs font-medium text-fuchsia-900 dark:bg-huddle-accent/15 dark:text-huddle-accent">
                                         <x-material-icon name="volunteer_activism" class="text-[0.875rem]" />
                                         {{ __('Wanted') }}
                                     </span>
@@ -316,17 +388,6 @@
 
                             <flux:table.cell class="hidden whitespace-nowrap lg:table-cell">
                                 <time
-                                    datetime="{{ $project->created_at->toIso8601String() }}"
-                                    title="{{ $project->created_at->format('j F Y, H:i') }}"
-                                    class="inline-flex items-center gap-1 text-zinc-600 dark:text-zinc-400"
-                                >
-                                    <x-material-icon name="event" class="text-[1rem] text-huddle-comp" />
-                                    {{ $project->created_at->format('j M Y') }}
-                                </time>
-                            </flux:table.cell>
-
-                            <flux:table.cell class="hidden whitespace-nowrap lg:table-cell">
-                                <time
                                     datetime="{{ $project->updated_at->toIso8601String() }}"
                                     title="{{ $project->updated_at->format('j F Y, H:i') }}"
                                     class="inline-flex items-center gap-1 text-zinc-600 dark:text-zinc-400"
@@ -342,64 +403,126 @@
         @endif
     </div>
 
-    <flux:modal wire:model="showCreateModal" class="md:w-lg">
-        <form wire:submit="createProject" class="space-y-6">
-            <div>
-                <flux:heading size="lg" class="inline-flex items-center gap-2">
-                    <x-material-icon name="create_new_folder" class="text-[1.5rem] text-huddle-primary" />
-                    {{ __('New project') }}
-                </flux:heading>
-                <flux:text class="mt-1">{{ __('Add a community project for your team to track.') }}</flux:text>
+    <flux:modal wire:model="showCreateModal" class="md:max-w-3xl">
+        <form wire:submit="createProject" class="flex max-h-[85vh] flex-col">
+            <div class="space-y-6 overflow-y-auto pe-1">
+                <div>
+                    <flux:heading size="lg" class="inline-flex items-center gap-2">
+                        <x-material-icon name="create_new_folder" class="text-[1.5rem] text-huddle-primary" />
+                        {{ $createStep === 2 ? __('New customer') : __('New project') }}
+                    </flux:heading>
+                    <flux:text class="mt-1">
+                        {{ $createStep === 2
+                            ? __('Add the customer details, then we will create the project.')
+                            : __('Add a community project for your team to track.') }}
+                    </flux:text>
+                    <div class="mt-3 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
+                        <span @class([
+                            'rounded-full px-2.5 py-1',
+                            'bg-huddle-primary/15 text-huddle-primary' => $createStep === 1,
+                            'bg-zinc-100 text-zinc-500 dark:bg-zinc-800' => $createStep !== 1,
+                        ])>{{ __('1. Project') }}</span>
+                        <span class="text-zinc-300 dark:text-zinc-600">→</span>
+                        <span @class([
+                            'rounded-full px-2.5 py-1',
+                            'bg-huddle-primary/15 text-huddle-primary' => $createStep === 2,
+                            'bg-zinc-100 text-zinc-500 dark:bg-zinc-800' => $createStep !== 2,
+                        ])>{{ __('2. New customer') }}</span>
+                    </div>
+                </div>
+
+                @if ($createStep === 1)
+                    <flux:input wire:model="name" :label="__('Name')" required />
+                    <flux:textarea wire:model="description" :label="__('Description')" rows="5" required />
+
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        @if (auth()->user()->can('assignLeader', \App\Models\Project::class))
+                            <x-member-select
+                                :users="$this->users"
+                                :selected-id="$leader_id"
+                                wire-model="leader_id"
+                                :label="__('Project leader')"
+                                :show-email="false"
+                            />
+                        @else
+                            <flux:text class="self-center text-sm text-zinc-600 dark:text-zinc-300">
+                                {{ __('You will be assigned as the project leader.') }}
+                            </flux:text>
+                        @endif
+
+                        <flux:select wire:model="project_status" :label="__('Status')">
+                            @foreach (\App\Models\Project::STATUSES as $status)
+                                <flux:select.option :value="$status">{{ str($status)->headline() }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+
+                        <flux:input wire:model="due_date" type="date" :label="__('Due date (optional)')" />
+
+                        <div class="space-y-2 sm:col-span-2">
+                            <x-customer-select
+                                :customers="$this->customers"
+                                :selected-id="$customer_id"
+                                wire-model="customer_id"
+                                :label="__('Customer (optional)')"
+                            />
+                            <flux:button type="button" variant="ghost" size="sm" wire:click="goToNewCustomerStep" class="!px-0">
+                                <span class="inline-flex items-center gap-1.5 text-huddle-primary">
+                                    <x-material-icon name="person_add" class="text-[1.125rem]" />
+                                    {{ __('Add new customer instead') }}
+                                </span>
+                            </flux:button>
+                        </div>
+                    </div>
+
+                    <flux:checkbox wire:model="volunteer_required" :label="__('Volunteers required')" />
+
+                    @if ($this->categories->isNotEmpty())
+                        <x-assign-select
+                            :options="$this->categories"
+                            :selected-ids="$assignedCategoryIds"
+                            wire-model="assignedCategoryIds"
+                            :label="__('Categories')"
+                            :placeholder="__('Select categories…')"
+                            :search-placeholder="__('Search categories…')"
+                            :empty-message="__('No matching categories.')"
+                            error-name="assignedCategoryIds"
+                        />
+                    @endif
+                @else
+                    <flux:text class="rounded-lg border border-zinc-200 bg-zinc-50/80 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800/40">
+                        {{ __('Project:') }} <span class="font-medium text-zinc-900 dark:text-white">{{ $name ?: __('Untitled') }}</span>
+                    </flux:text>
+
+                    <flux:input wire:model="new_customer_name" :label="__('Name')" required />
+
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <flux:select wire:model="new_customer_type" :label="__('Type')" required>
+                            @foreach (\App\Models\Customer::TYPES as $type)
+                                <flux:select.option :value="$type">{{ str($type)->headline() }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+                        <flux:input wire:model="new_customer_telephone" type="tel" :label="__('Telephone')" />
+                    </div>
+
+                    <flux:input wire:model="new_customer_email" type="email" :label="__('Email')" />
+                    <flux:textarea wire:model="new_customer_address" :label="__('Address')" rows="3" />
+                @endif
             </div>
 
-            <flux:input wire:model="name" :label="__('Name')" required />
-            <flux:textarea wire:model="description" :label="__('Description')" rows="4" required />
-
-            @if (auth()->user()->can('assignLeader', \App\Models\Project::class))
-                <x-member-select
-                    :users="$this->users"
-                    :selected-id="$leader_id"
-                    wire-model="leader_id"
-                    :label="__('Project leader')"
-                    :show-email="false"
-                />
-            @else
-                <flux:text class="text-sm text-zinc-600 dark:text-zinc-300">
-                    {{ __('You will be assigned as the project leader.') }}
-                </flux:text>
-            @endif
-
-            <flux:select wire:model="project_status" :label="__('Status')">
-                @foreach (\App\Models\Project::STATUSES as $status)
-                    <flux:select.option :value="$status">{{ str($status)->headline() }}</flux:select.option>
-                @endforeach
-            </flux:select>
-
-            <flux:checkbox wire:model="volunteer_required" :label="__('Volunteers required')" />
-
-            <flux:input wire:model="due_date" type="date" :label="__('Due date (optional)')" />
-
-            @if ($this->categories->isNotEmpty())
-                <x-assign-select
-                    :options="$this->categories"
-                    :selected-ids="$assignedCategoryIds"
-                    wire-model="assignedCategoryIds"
-                    :label="__('Categories')"
-                    :placeholder="__('Select categories…')"
-                    :search-placeholder="__('Search categories…')"
-                    :empty-message="__('No matching categories.')"
-                    error-name="assignedCategoryIds"
-                />
-            @endif
-
-            <div class="flex justify-end gap-2">
-                <flux:button type="button" variant="ghost" wire:click="closeCreateModal">
-                    {{ __('Cancel') }}
-                </flux:button>
+            <div class="mt-6 flex shrink-0 justify-end gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-700">
+                @if ($createStep === 2)
+                    <flux:button type="button" variant="ghost" wire:click="backToProjectStep">
+                        {{ __('Back') }}
+                    </flux:button>
+                @else
+                    <flux:button type="button" variant="ghost" wire:click="closeCreateModal">
+                        {{ __('Cancel') }}
+                    </flux:button>
+                @endif
                 <flux:button type="submit" variant="primary">
                     <span class="inline-flex items-center gap-2">
                         <x-material-icon name="check" class="text-[1.25rem]" />
-                        {{ __('Create project') }}
+                        {{ $createStep === 2 ? __('Create customer & project') : __('Create project') }}
                     </span>
                 </flux:button>
             </div>

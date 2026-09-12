@@ -67,6 +67,7 @@ class ProjectReportService
             'projects' => $projects,
             'generatedAt' => now(),
             'filters' => $filters,
+            'includeComments' => (bool) ($filters['include_comments'] ?? true),
         ];
     }
 
@@ -83,5 +84,63 @@ class ProjectReportService
     public function projectsStatusFilename(): string
     {
         return 'projects-status-report-'.now()->format('Y-m-d').'.pdf';
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return list<string>
+     */
+    public function filterSummary(array $filters, bool $showFinancials): array
+    {
+        $summary = [];
+
+        if (($filters['statuses'] ?? []) !== ['outstanding', 'in-progress']) {
+            $summary[] = __('Statuses: :statuses', [
+                'statuses' => collect($filters['statuses'] ?? [])
+                    ->map(fn (string $status): string => str($status)->headline()->toString())
+                    ->join(', '),
+            ]);
+        }
+
+        if ($filters['leader_id'] ?? null) {
+            $leaderName = \App\Models\User::query()->whereKey($filters['leader_id'])->value('name');
+
+            if ($leaderName) {
+                $summary[] = __('Leader: :leader', ['leader' => $leaderName]);
+            }
+        }
+
+        if (($filters['due_date_from'] ?? null) || ($filters['due_date_to'] ?? null)) {
+            $summary[] = __('Due: :from to :to', [
+                'from' => ($filters['due_date_from'] ?? null)
+                    ? \Illuminate\Support\Carbon::parse($filters['due_date_from'])->format('j M Y')
+                    : __('Any'),
+                'to' => ($filters['due_date_to'] ?? null)
+                    ? \Illuminate\Support\Carbon::parse($filters['due_date_to'])->format('j M Y')
+                    : __('Any'),
+            ]);
+        }
+
+        if (($filters['volunteer_filter'] ?? null) === 'required') {
+            $summary[] = __('Volunteers required only');
+        } elseif (($filters['volunteer_filter'] ?? null) === 'not_required') {
+            $summary[] = __('No volunteer call only');
+        }
+
+        if ($showFinancials && ($filters['financial_status'] ?? null)) {
+            $summary[] = __('Finance: :status', [
+                'status' => str($filters['financial_status'])->headline()->toString(),
+            ]);
+        }
+
+        if ($filters['overdue_only'] ?? false) {
+            $summary[] = __('Overdue only');
+        }
+
+        if (! ($filters['include_comments'] ?? true)) {
+            $summary[] = __('Comments excluded');
+        }
+
+        return $summary;
     }
 }

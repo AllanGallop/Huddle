@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Projects;
 
+use App\Models\Customer;
 use App\Models\Project;
 use App\Models\ProjectCategory;
 use App\Models\User;
@@ -16,11 +17,13 @@ class Index extends Component
 {
     public string $search = '';
 
-    public string $statusFilter = '';
+    public string $statusFilter = 'active';
 
     public string $leaderFilter = '';
 
     public string $categoryFilter = '';
+
+    public string $customerFilter = '';
 
     public string $volunteersFilter = '';
 
@@ -34,6 +37,8 @@ class Index extends Component
 
     public bool $showCreateModal = false;
 
+    public int $createStep = 1;
+
     public string $name = '';
 
     public string $description = '';
@@ -45,6 +50,18 @@ class Index extends Component
     public ?int $leader_id = null;
 
     public ?string $due_date = null;
+
+    public ?int $customer_id = null;
+
+    public string $new_customer_name = '';
+
+    public string $new_customer_address = '';
+
+    public string $new_customer_email = '';
+
+    public string $new_customer_telephone = '';
+
+    public string $new_customer_type = 'domestic';
 
     /** @var array<int> */
     public array $assignedCategoryIds = [];
@@ -72,26 +89,40 @@ class Index extends Component
 
     public function clearFilters(): void
     {
-        $this->reset(['search', 'statusFilter', 'leaderFilter', 'categoryFilter', 'volunteersFilter', 'financialStatusFilter', 'mineOnly']);
+        $this->reset(['search', 'leaderFilter', 'categoryFilter', 'customerFilter', 'volunteersFilter', 'financialStatusFilter', 'mineOnly']);
+        $this->statusFilter = 'active';
     }
 
     #[Computed]
     public function hasActiveFilters(): bool
     {
         return $this->search !== ''
-            || $this->statusFilter !== ''
+            || ($this->statusFilter !== '' && $this->statusFilter !== 'active')
             || $this->leaderFilter !== ''
             || $this->categoryFilter !== ''
+            || $this->customerFilter !== ''
             || $this->volunteersFilter !== ''
             || $this->financialStatusFilter !== ''
             || $this->mineOnly;
     }
 
     #[Computed]
+    public function newestProjects()
+    {
+        $query = Project::query()
+            ->with(['leader', 'categories', 'customer'])
+            ->withCount(['comments', 'volunteers', 'images']);
+
+        $this->applyFilters($query);
+
+        return $query->orderByDesc('created_at')->limit(4)->get();
+    }
+
+    #[Computed]
     public function projects()
     {
         $query = Project::query()
-            ->with(['leader', 'creator', 'categories'])
+            ->with(['leader', 'creator', 'categories', 'customer'])
             ->withCount(['comments', 'volunteers', 'images']);
 
         $this->applyFilters($query);
@@ -110,6 +141,12 @@ class Index extends Component
     public function categories()
     {
         return ProjectCategory::query()->orderBy('name')->get();
+    }
+
+    #[Computed]
+    public function customers()
+    {
+        return Customer::query()->orderBy('name')->get();
     }
 
     #[Computed]
@@ -147,10 +184,57 @@ class Index extends Component
         $this->resetForm();
     }
 
+    public function goToNewCustomerStep(): void
+    {
+        $this->authorize('create', Project::class);
+
+        $this->validateProjectDetails();
+        $this->customer_id = null;
+        $this->createStep = 2;
+        $this->resetValidation();
+    }
+
+    public function backToProjectStep(): void
+    {
+        $this->createStep = 1;
+        $this->resetValidation();
+    }
+
     public function createProject(): void
     {
         $this->authorize('create', Project::class);
 
+        $this->validateProjectDetails();
+
+        if ($this->createStep === 2) {
+            $customer = $this->createCustomerFromForm();
+            $this->customer_id = $customer->id;
+            unset($this->customers);
+        }
+
+        $user = Auth::user();
+        $categoryIds = $this->assignedCategoryIds;
+
+        $project = Project::create([
+            'name' => $this->name,
+            'description' => $this->description,
+            'project_status' => $this->project_status,
+            'volunteer_required' => $this->volunteer_required,
+            'due_date' => $this->due_date ?: null,
+            'customer_id' => $this->customer_id ?: null,
+            'leader_id' => $user->can('assignLeader', Project::class)
+                ? $this->leader_id
+                : $user->id,
+            'created_by' => Auth::id(),
+        ]);
+
+        $project->categories()->sync($categoryIds);
+
+        $this->redirect(route('projects.show', $project), navigate: true);
+    }
+
+    protected function validateProjectDetails(): void
+    {
         $user = Auth::user();
 
         $rules = [
@@ -159,6 +243,7 @@ class Index extends Component
             'project_status' => ['required', 'in:'.implode(',', Project::STATUSES)],
             'volunteer_required' => ['boolean'],
             'due_date' => ['nullable', 'date'],
+            'customer_id' => ['nullable', 'exists:customers,id'],
             'assignedCategoryIds' => ['array'],
             'assignedCategoryIds.*' => ['integer', 'exists:project_categories,id'],
         ];
@@ -167,23 +252,26 @@ class Index extends Component
             $rules['leader_id'] = ['required', 'exists:users,id'];
         }
 
-        $validated = $this->validate($rules);
+        $this->validate($rules);
+    }
 
-        if (! $user->can('assignLeader', Project::class)) {
-            $validated['leader_id'] = $user->id;
-        }
-
-        $categoryIds = $validated['assignedCategoryIds'] ?? [];
-        unset($validated['assignedCategoryIds']);
-
-        $project = Project::create([
-            ...$validated,
-            'created_by' => Auth::id(),
+    protected function createCustomerFromForm(): Customer
+    {
+        $validated = $this->validate([
+            'new_customer_name' => ['required', 'string', 'max:255'],
+            'new_customer_address' => ['nullable', 'string', 'max:2000'],
+            'new_customer_email' => ['nullable', 'email', 'max:255'],
+            'new_customer_telephone' => ['nullable', 'string', 'max:50'],
+            'new_customer_type' => ['required', 'in:'.implode(',', Customer::TYPES)],
         ]);
 
-        $project->categories()->sync($categoryIds);
-
-        $this->redirect(route('projects.show', $project), navigate: true);
+        return Customer::create([
+            'name' => $validated['new_customer_name'],
+            'address' => $validated['new_customer_address'] ?: null,
+            'email' => $validated['new_customer_email'] ?: null,
+            'telephone' => $validated['new_customer_telephone'] ?: null,
+            'type' => $validated['new_customer_type'],
+        ]);
     }
 
     protected function applyFilters(Builder $query): void
@@ -194,11 +282,19 @@ class Index extends Component
                 $q->where('name', 'like', $term)
                     ->orWhere('description', 'like', $term)
                     ->orWhereHas('leader', fn (Builder $leader) => $leader->where('name', 'like', $term))
-                    ->orWhereHas('categories', fn (Builder $category) => $category->where('name', 'like', $term));
+                    ->orWhereHas('categories', fn (Builder $category) => $category->where('name', 'like', $term))
+                    ->orWhereHas('customer', function (Builder $customer) use ($term) {
+                        $customer->where(function (Builder $inner) use ($term) {
+                            $inner->where('name', 'like', $term)
+                                ->orWhere('email', 'like', $term);
+                        });
+                    });
             });
         }
 
-        if ($this->statusFilter !== '') {
+        if ($this->statusFilter === 'active') {
+            $query->whereNotIn('project_status', ['completed', 'cancelled']);
+        } elseif ($this->statusFilter !== '') {
             $query->where('project_status', $this->statusFilter);
         }
 
@@ -211,6 +307,10 @@ class Index extends Component
                 'categories',
                 fn (Builder $category) => $category->where('project_categories.id', $this->categoryFilter)
             );
+        }
+
+        if ($this->customerFilter !== '') {
+            $query->where('customer_id', $this->customerFilter);
         }
 
         if ($this->volunteersFilter === 'required') {
@@ -249,10 +349,26 @@ class Index extends Component
 
     protected function resetForm(): void
     {
-        $this->reset(['name', 'description', 'project_status', 'volunteer_required', 'due_date', 'assignedCategoryIds']);
+        $this->reset([
+            'name',
+            'description',
+            'project_status',
+            'volunteer_required',
+            'due_date',
+            'customer_id',
+            'assignedCategoryIds',
+            'createStep',
+            'new_customer_name',
+            'new_customer_address',
+            'new_customer_email',
+            'new_customer_telephone',
+        ]);
+        $this->createStep = 1;
         $this->project_status = 'draft';
         $this->volunteer_required = false;
         $this->leader_id = Auth::id();
+        $this->customer_id = null;
+        $this->new_customer_type = 'domestic';
         $this->assignedCategoryIds = [];
         $this->resetValidation();
     }

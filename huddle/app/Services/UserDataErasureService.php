@@ -31,6 +31,8 @@ class UserDataErasureService
             $this->deleteSessions($user);
             $this->deletePasswordResetTokens($user);
 
+            $user->deleteAvatarFile();
+
             ProjectVolunteer::query()->where('user_id', $user->id)->delete();
             EventVolunteer::query()->where('user_id', $user->id)->delete();
             ProjectComment::query()->where('user_id', $user->id)->delete();
