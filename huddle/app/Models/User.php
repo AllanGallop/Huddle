@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -183,6 +184,32 @@ class User extends Authenticatable
             'privacy_policy_accepted_at' => now(),
             'privacy_policy_version' => config('gdpr.policy_version'),
         ])->save();
+    }
+
+    /**
+     * Set a new password and invalidate existing sessions / remember-me cookies.
+     */
+    public function updatePassword(#[\SensitiveParameter] string $password, bool $invalidateCurrentSession = true): void
+    {
+        $this->forceFill([
+            'password' => $password,
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        if (config('session.driver') === 'database') {
+            $query = DB::table(config('session.table', 'sessions'))
+                ->where('user_id', $this->id);
+
+            if (! $invalidateCurrentSession && session()->getId()) {
+                $query->where('id', '!=', session()->getId());
+            }
+
+            $query->delete();
+        }
+
+        DB::table(config('auth.passwords.users.table', 'password_reset_tokens'))
+            ->where('email', $this->email)
+            ->delete();
     }
 
     public function latestMembershipRenewalAssignment(): ?MembershipRenewalAssignment
@@ -363,6 +390,15 @@ class User extends Authenticatable
     public function canManageProjectFinancials(Project $project): bool
     {
         return $this->isAdmin() || $this->leadsProject($project);
+    }
+
+    /**
+     * Customer email/telephone are visible to admins and project managers
+     * (project owner or project leader), not regular members.
+     */
+    public function canViewCustomerContact(Project $project): bool
+    {
+        return $this->canManageProject($project) || $this->leadsProject($project);
     }
 
     public function ownsEvent(Event $event): bool

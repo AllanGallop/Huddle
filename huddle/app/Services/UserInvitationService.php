@@ -6,7 +6,6 @@ use App\Models\MembershipRenewalAssignment;
 use App\Models\User;
 use App\Notifications\UserInvitationNotification;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 
@@ -27,7 +26,8 @@ class UserInvitationService
             $user = new User([
                 'name' => $name,
                 'email' => $email,
-                'password' => Hash::make(Str::password(32)),
+                // Plaintext: User model `hashed` cast hashes once on save.
+                'password' => Str::password(32),
             ]);
             $user->save();
             $user->roles()->sync($roleIds);

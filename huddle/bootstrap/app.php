@@ -11,6 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Shared hosts terminate TLS at a proxy. Without this, secure
+        // session / remember-me cookies are set incorrectly and logins look flaky.
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'mentor' => \App\Http\Middleware\EnsureUserCanAccessMentors::class,

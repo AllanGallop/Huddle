@@ -64,6 +64,8 @@ class Index extends Component
 
     public string $password_confirmation = '';
 
+    public bool $settingNewPassword = false;
+
     public string $account_name = '';
 
     public string $bank_name = '';
@@ -285,6 +287,7 @@ class Index extends Component
         $this->assignedRoleIds = $user->roles->pluck('id')->map(fn ($id) => (int) $id)->all();
         $this->password = '';
         $this->password_confirmation = '';
+        $this->settingNewPassword = false;
         $this->assignedFlagIds = $user->flags->pluck('id')->map(fn ($id) => (int) $id)->all();
         $this->showUserModal = true;
     }
@@ -464,7 +467,7 @@ class Index extends Component
             'assignedRoleIds.*' => ['integer', 'exists:roles,id'],
         ];
 
-        if ($this->password !== '') {
+        if ($this->settingNewPassword) {
             $rules['password'] = $this->passwordRules();
         }
 
@@ -490,8 +493,8 @@ class Index extends Component
         $user->save();
         $user->roles()->sync($validated['assignedRoleIds']);
 
-        if (! empty($validated['password'] ?? null)) {
-            $user->update(['password' => $validated['password']]);
+        if ($this->settingNewPassword && ! empty($validated['password'] ?? null)) {
+            $user->updatePassword($validated['password']);
         }
 
         $this->syncUserFlags($user);
@@ -1043,10 +1046,12 @@ class Index extends Component
             'assignedRoleIds',
             'password',
             'password_confirmation',
+            'settingNewPassword',
             'assignedFlagIds',
         ]);
         $this->assignedRoleIds = [];
         $this->assignedFlagIds = [];
+        $this->settingNewPassword = false;
         $this->userModalMode = 'add';
     }
 

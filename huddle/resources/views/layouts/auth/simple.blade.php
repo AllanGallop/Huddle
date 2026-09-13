@@ -9,7 +9,6 @@
                 <a
                     href="{{ auth()->check() ? route('dashboard') : route('login') }}"
                     class="flex flex-col items-center gap-2 font-medium"
-                    wire:navigate
                 >
                     <x-brand-mark variant="banner" class="h-12" />
                     <span class="sr-only">{{ config('app.name', 'Huddle') }}</span>

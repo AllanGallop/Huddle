@@ -174,11 +174,13 @@
                                 <span class="font-normal text-zinc-500">· {{ $project->customer->typeLabel() }}</span>
                             </p>
                             <div class="mt-0.5 space-y-0.5 text-xs text-zinc-500">
-                                @if ($project->customer->email)
-                                    <p class="truncate">{{ $project->customer->email }}</p>
-                                @endif
-                                @if ($project->customer->telephone)
-                                    <p>{{ $project->customer->telephone }}</p>
+                                @if ($this->canViewCustomerContact)
+                                    @if ($project->customer->email)
+                                        <p class="truncate">{{ $project->customer->email }}</p>
+                                    @endif
+                                    @if ($project->customer->telephone)
+                                        <p>{{ $project->customer->telephone }}</p>
+                                    @endif
                                 @endif
                                 @if ($project->customer->address)
                                     <p class="whitespace-pre-line">{{ $project->customer->address }}</p>

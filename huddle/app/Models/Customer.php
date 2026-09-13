@@ -29,4 +29,17 @@ class Customer extends Model
     {
         return str($this->type)->headline()->toString();
     }
+
+    /**
+     * Strip contact fields from the in-memory model so they are not rendered
+     * or serialized to unauthorized clients. Does not persist.
+     */
+    public function hideContactDetails(): static
+    {
+        $this->email = null;
+        $this->telephone = null;
+        $this->makeHidden(['email', 'telephone']);
+
+        return $this;
+    }
 }

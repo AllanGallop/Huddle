@@ -7,7 +7,6 @@ use App\Models\User;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use PDO;
 use PDOException;
@@ -201,7 +200,8 @@ class Installer
             $admin = new User([
                 'name' => $name,
                 'email' => $email,
-                'password' => Hash::make($password),
+                // Plaintext: User model `hashed` cast hashes once on save.
+                'password' => $password,
             ]);
             $admin->email_verified_at = now();
             $admin->privacy_policy_accepted_at = now();

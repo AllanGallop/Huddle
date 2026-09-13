@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Laravel\Fortify\Features;
 use Tests\TestCase;
 
@@ -16,6 +17,8 @@ class AuthenticationTest extends TestCase
         $response = $this->get(route('login'));
 
         $response->assertOk();
+        $response->assertSee('name="remember"', false);
+        $response->assertSee('type="checkbox"', false);
     }
 
     public function test_users_can_authenticate_using_the_login_screen(): void
@@ -32,6 +35,27 @@ class AuthenticationTest extends TestCase
             ->assertRedirect(route('dashboard', absolute: false));
 
         $this->assertAuthenticated();
+    }
+
+    public function test_remember_me_sets_recaller_cookie(): void
+    {
+        $user = User::factory()->create([
+            'remember_token' => null,
+        ]);
+
+        $response = $this->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'password',
+            'remember' => '1',
+        ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('dashboard', absolute: false))
+            ->assertCookie(Auth::guard()->getRecallerName());
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertNotNull($user->fresh()->remember_token);
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void

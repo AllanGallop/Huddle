@@ -82,6 +82,7 @@ class Show extends Component
     public function mount(Project $project): void
     {
         $this->project = $project->load(['leader', 'creator', 'categories', 'customer']);
+        $this->redactCustomerContactIfNeeded();
 
         if (Auth::user()->canManageProjectFinancials($this->project)) {
             $this->fillFinancialFields();
@@ -128,6 +129,12 @@ class Show extends Component
     }
 
     #[Computed]
+    public function canViewCustomerContact(): bool
+    {
+        return Auth::user()->canViewCustomerContact($this->project);
+    }
+
+    #[Computed]
     public function users()
     {
         return User::query()->orderBy('name')->get(['id', 'name']);
@@ -142,7 +149,9 @@ class Show extends Component
     #[Computed]
     public function customers()
     {
-        return Customer::query()->orderBy('name')->get();
+        return Customer::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'type']);
     }
 
     #[Computed]
@@ -295,6 +304,7 @@ class Show extends Component
         $this->project->update($validated);
         $this->project->categories()->sync($categoryIds);
         $this->project->load(['leader', 'creator', 'categories', 'customer']);
+        $this->redactCustomerContactIfNeeded();
 
         if ($this->canManageFinancials) {
             $this->due_date = $this->project->due_date?->format('Y-m-d');
@@ -647,8 +657,18 @@ class Show extends Component
         $this->authorize('manageFinancials', $this->project);
     }
 
+    protected function redactCustomerContactIfNeeded(): void
+    {
+        if ($this->project->customer && ! Auth::user()->canViewCustomerContact($this->project)) {
+            $this->project->customer->hideContactDetails();
+        }
+    }
+
     public function render()
     {
+        $this->project->loadMissing('customer');
+        $this->redactCustomerContactIfNeeded();
+
         return view('livewire.projects.show');
     }
 }
