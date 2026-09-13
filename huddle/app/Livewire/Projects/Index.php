@@ -110,7 +110,11 @@ class Index extends Component
     public function newestProjects()
     {
         $query = Project::query()
-            ->with(['leader', 'categories', 'customer'])
+            ->with([
+                'leader',
+                'categories',
+                'customer:id,name,type',
+            ])
             ->withCount(['comments', 'volunteers', 'images']);
 
         $this->applyFilters($query);
@@ -122,7 +126,12 @@ class Index extends Component
     public function projects()
     {
         $query = Project::query()
-            ->with(['leader', 'creator', 'categories', 'customer'])
+            ->with([
+                'leader',
+                'creator',
+                'categories',
+                'customer:id,name,type',
+            ])
             ->withCount(['comments', 'volunteers', 'images']);
 
         $this->applyFilters($query);
@@ -146,7 +155,9 @@ class Index extends Component
     #[Computed]
     public function customers()
     {
-        return Customer::query()->orderBy('name')->get();
+        return Customer::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'type']);
     }
 
     #[Computed]
@@ -284,10 +295,7 @@ class Index extends Component
                     ->orWhereHas('leader', fn (Builder $leader) => $leader->where('name', 'like', $term))
                     ->orWhereHas('categories', fn (Builder $category) => $category->where('name', 'like', $term))
                     ->orWhereHas('customer', function (Builder $customer) use ($term) {
-                        $customer->where(function (Builder $inner) use ($term) {
-                            $inner->where('name', 'like', $term)
-                                ->orWhere('email', 'like', $term);
-                        });
+                        $customer->where('name', 'like', $term);
                     });
             });
         }

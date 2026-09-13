@@ -927,11 +927,14 @@
             </div>
 
             @if ($userModalMode === 'add')
-                <flux:input wire:model="password" type="password" :label="__('Password')" viewable required />
-                <flux:input wire:model="password_confirmation" type="password" :label="__('Confirm password')" viewable required />
+                <flux:input wire:model="password" type="password" :label="__('Password')" autocomplete="new-password" viewable required />
+                <flux:input wire:model="password_confirmation" type="password" :label="__('Confirm password')" autocomplete="new-password" viewable required />
             @elseif ($userModalMode === 'edit')
-                <flux:input wire:model="password" type="password" :label="__('New password (optional)')" viewable />
-                <flux:input wire:model="password_confirmation" type="password" :label="__('Confirm new password')" viewable />
+                <flux:checkbox wire:model.live="settingNewPassword" :label="__('Set a new password')" />
+                @if ($settingNewPassword)
+                    <flux:input wire:model="password" type="password" :label="__('New password')" autocomplete="new-password" viewable required />
+                    <flux:input wire:model="password_confirmation" type="password" :label="__('Confirm new password')" autocomplete="new-password" viewable required />
+                @endif
             @endif
 
             @if ($this->flags->isNotEmpty())

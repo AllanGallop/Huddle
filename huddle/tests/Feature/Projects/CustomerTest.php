@@ -139,4 +139,107 @@ class CustomerTest extends TestCase
 
         $this->assertSame($second->id, $project->fresh()->customer_id);
     }
+
+    public function test_regular_member_cannot_see_customer_contact_on_project(): void
+    {
+        $owner = User::factory()->create();
+        $member = User::factory()->create();
+        $customer = Customer::query()->create([
+            'name' => 'Private Client',
+            'email' => 'secret@client.test',
+            'telephone' => '07700 900999',
+            'address' => '9 Hidden Lane',
+            'type' => 'domestic',
+        ]);
+
+        $project = Project::query()->create([
+            'name' => 'Contact privacy job',
+            'description' => 'Desc',
+            'created_by' => $owner->id,
+            'leader_id' => $owner->id,
+            'customer_id' => $customer->id,
+            'project_status' => 'outstanding',
+            'volunteer_required' => false,
+        ]);
+
+        Livewire::actingAs($member)
+            ->test(ProjectsShow::class, ['project' => $project])
+            ->assertSee('Private Client')
+            ->assertSee('9 Hidden Lane')
+            ->assertDontSee('secret@client.test')
+            ->assertDontSee('07700 900999');
+    }
+
+    public function test_project_manager_can_see_customer_contact_on_project(): void
+    {
+        $manager = User::factory()->create();
+        $customer = Customer::query()->create([
+            'name' => 'Visible Client',
+            'email' => 'visible@client.test',
+            'telephone' => '0117 123 4567',
+            'type' => 'commercial',
+        ]);
+
+        $project = Project::query()->create([
+            'name' => 'Managed job',
+            'description' => 'Desc',
+            'created_by' => $manager->id,
+            'leader_id' => $manager->id,
+            'customer_id' => $customer->id,
+            'project_status' => 'outstanding',
+            'volunteer_required' => false,
+        ]);
+
+        Livewire::actingAs($manager)
+            ->test(ProjectsShow::class, ['project' => $project])
+            ->assertSee('Visible Client')
+            ->assertSee('visible@client.test')
+            ->assertSee('0117 123 4567');
+    }
+
+    public function test_project_leader_who_is_not_owner_can_see_customer_contact(): void
+    {
+        $owner = User::factory()->create();
+        $leader = User::factory()->create();
+        $customer = Customer::query()->create([
+            'name' => 'Leader Client',
+            'email' => 'leader-view@client.test',
+            'telephone' => '01234 111222',
+            'type' => 'domestic',
+        ]);
+
+        $project = Project::query()->create([
+            'name' => 'Led job',
+            'description' => 'Desc',
+            'created_by' => $owner->id,
+            'leader_id' => $leader->id,
+            'customer_id' => $customer->id,
+            'project_status' => 'outstanding',
+            'volunteer_required' => false,
+        ]);
+
+        Livewire::actingAs($leader)
+            ->test(ProjectsShow::class, ['project' => $project])
+            ->assertSee('leader-view@client.test')
+            ->assertSee('01234 111222');
+    }
+
+    public function test_customer_select_options_omit_contact_details(): void
+    {
+        $member = User::factory()->create();
+        Customer::query()->create([
+            'name' => 'Picker Client',
+            'email' => 'picker@client.test',
+            'telephone' => '07000 111222',
+            'type' => 'commercial',
+        ]);
+
+        Livewire::actingAs($member)
+            ->test(ProjectsIndex::class)
+            ->call('openCreateModal')
+            ->assertSee('Picker Client')
+            ->assertSee('Commercial')
+            ->assertDontSee('picker@client.test')
+            ->assertDontSee('07000 111222');
+    }
 }

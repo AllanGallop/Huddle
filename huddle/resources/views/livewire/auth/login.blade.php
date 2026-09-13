@@ -39,14 +39,23 @@
                 />
 
                 @if (Route::has('password.request'))
-                    <flux:link class="absolute top-0 text-sm end-0" :href="route('password.request')" wire:navigate>
+                    <a href="{{ route('password.request') }}" class="absolute top-0 text-sm end-0 font-medium text-huddle-primary hover:opacity-80">
                         {{ __('Forgot your password?') }}
-                    </flux:link>
+                    </a>
                 @endif
             </div>
 
-            <!-- Remember Me -->
-            <flux:checkbox name="remember" :label="__('Remember me')" :checked="old('remember')" />
+            {{-- Native checkbox: Flux ui-checkbox is not a form-associated control, so "remember" never reached Fortify. --}}
+            <label class="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+                <input
+                    type="checkbox"
+                    name="remember"
+                    value="1"
+                    @checked(old('remember'))
+                    class="rounded border-zinc-300 text-huddle-primary focus:ring-huddle-primary dark:border-zinc-600 dark:bg-zinc-900"
+                >
+                <span>{{ __('Remember me') }}</span>
+            </label>
 
             <div class="flex items-center justify-end">
                 <flux:button variant="primary" type="submit" class="w-full" data-test="login-button">

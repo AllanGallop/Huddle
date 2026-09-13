@@ -37,6 +37,11 @@ class ProjectPolicy
         return $user->canManageProjectFinancials($project);
     }
 
+    public function viewCustomerContact(User $user, Project $project): bool
+    {
+        return $user->canViewCustomerContact($project);
+    }
+
     public function uploadImage(User $user, Project $project): bool
     {
         return $user->canManageProject($project);

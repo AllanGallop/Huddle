@@ -10,16 +10,10 @@
 
 @php
     $options = collect($customers)->map(function ($customer) {
-        $parts = array_filter([
-            $customer->typeLabel(),
-            $customer->email,
-            $customer->telephone,
-        ]);
-
         return (object) [
             'id' => $customer->id,
             'name' => $customer->name,
-            'description' => implode(' · ', $parts),
+            'description' => $customer->typeLabel(),
         ];
     });
 @endphp
@@ -30,7 +24,7 @@
     :wire-model="$wireModel"
     :label="$label ?? __('Customer')"
     :placeholder="$placeholder ?? __('Search customers…')"
-    :search-placeholder="__('Search by name, email, or type…')"
+    :search-placeholder="__('Search by name or type…')"
     :empty-message="__('No matching customers.')"
     :allow-clear="$allowClear"
     :clear-label="$clearLabel ?? __('No customer')"
